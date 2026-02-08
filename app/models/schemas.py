@@ -29,6 +29,8 @@ class CalculationRequest(BaseModel):
     longitude: Optional[float] = Field(None, description="Longitude in decimal degrees (positive for East)")
     timezone: Optional[float] = Field(5.5, description="Timezone offset from UTC (default: 5.5 for Sri Lanka)")
     location: Optional[str] = Field(None, description="Sri Lanka location key (e.g., 'colombo', 'galle')")
+    ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), or 'manual'")
+    manual_ayanamsa: Optional[float] = Field(None, description="Custom ayanamsa value in degrees (required when ayanamsa_type='manual')")
     
     @field_validator('date')
     @classmethod
@@ -148,6 +150,7 @@ class CalculationResponse(BaseModel):
     planets: List[PlanetPosition]
     houses: List[HouseCusp]
     house_system: str = "Placidus"
+    dasha: Optional[dict] = None  # Vimshottari Dasha information
 
 
 class LocationListResponse(BaseModel):
@@ -162,3 +165,119 @@ class ErrorResponse(BaseModel):
     success: bool = False
     error: str
     detail: Optional[str] = None
+
+
+# =============================================================================
+# HORARY MODELS
+# =============================================================================
+
+class HoraryRequest(BaseModel):
+    """
+    Request model for KP Horary calculations.
+    
+    The horary number (1-249) determines the Ascendant degree.
+    The system will find the time when Ascendant matches that degree.
+    """
+    horary_number: int = Field(..., ge=1, le=249, description="KP Horary number (1-249)")
+    date: str = Field(..., description="Date of query in YYYY-MM-DD format")
+    time: str = Field("12:00", description="Seed time in HH:MM format (used as search hint)")
+    latitude: Optional[float] = Field(None, description="Latitude in decimal degrees")
+    longitude: Optional[float] = Field(None, description="Longitude in decimal degrees")
+    timezone: Optional[float] = Field(5.5, description="Timezone offset from UTC")
+    location: Optional[str] = Field(None, description="Sri Lanka location key")
+    ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), or 'manual'")
+    manual_ayanamsa: Optional[float] = Field(None, description="Custom ayanamsa value in degrees (required when ayanamsa_type='manual')")
+    
+    @field_validator('date')
+    @classmethod
+    def validate_date(cls, v):
+        """Validate date format."""
+        try:
+            parts = v.split('-')
+            if len(parts) != 3:
+                raise ValueError()
+            year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+            if year < 1 or month < 1 or month > 12 or day < 1 or day > 31:
+                raise ValueError()
+            return v
+        except:
+            raise ValueError("Date must be in YYYY-MM-DD format")
+
+
+class HoraryInfo(BaseModel):
+    """Horary number details."""
+    number: int
+    target_ascendant: float = Field(..., description="Target Ascendant degree")
+    target_ascendant_dms: str = Field(..., description="Target Ascendant in DMS format")
+    sign: str
+    sign_lord: str
+    star: str
+    star_lord: str
+    sub_lord: str
+
+
+class HoraryResponse(BaseModel):
+    """
+    Response model for KP Horary calculations.
+    
+    Contains the horary details plus full chart like CalculationResponse.
+    """
+    success: bool = True
+    horary: HoraryInfo
+    calculated_time: str = Field(..., description="Time when Ascendant matches (HH:MM:SS)")
+    date: str
+    location: LocationUsed
+    julian_day: float
+    ayanamsa: AyanamsaInfo
+    ascendant: AscendantInfo
+    planets: List[PlanetPosition]
+    houses: List[HouseCusp]
+    house_system: str = "Placidus"
+
+
+# =============================================================================
+# DASHA MODELS
+# =============================================================================
+
+class DashaPeriod(BaseModel):
+    """A single Dasha period (Mahadasha or Antardasha)."""
+    planet: str
+    start_date: str = Field(..., description="Start date in YYYY-MM-DD format")
+    end_date: str = Field(..., description="End date in YYYY-MM-DD format")
+    duration_years: float = Field(..., description="Duration in years")
+
+
+class AntardashaInfo(BaseModel):
+    """Antardasha (sub-period) within a Mahadasha."""
+    planet: str
+    start_date: str
+    end_date: str
+    duration_years: float
+
+
+class MahadashaInfo(BaseModel):
+    """Mahadasha (major period) with its Antardashas."""
+    planet: str
+    start_date: str
+    end_date: str
+    duration_years: float
+    antardasha: List[AntardashaInfo]
+
+
+class CurrentDashaInfo(BaseModel):
+    """Currently running Dasha periods."""
+    mahadasha: DashaPeriod
+    antardasha: Optional[DashaPeriod] = None
+    pratyantardasha: Optional[DashaPeriod] = None
+    sookshma_dasha: Optional[DashaPeriod] = None
+    dasha_string: str = Field(..., description="Formatted string like 'Jupiter-Saturn-Mercury-Venus'")
+
+
+class DashaInfo(BaseModel):
+    """Complete Vimshottari Dasha information."""
+    birth_dasha_lord: str = Field(..., description="Planet ruling Dasha at birth")
+    birth_dasha_balance_years: float = Field(..., description="Years remaining of birth Dasha")
+    birth_nakshatra: str = Field(..., description="Moon's Nakshatra at birth")
+    mahadasha_periods: List[MahadashaInfo]
+    current_dasha: Optional[CurrentDashaInfo] = None
+
