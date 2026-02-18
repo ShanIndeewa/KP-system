@@ -38,13 +38,13 @@ from app.services.ayanamsa import calculate_kp_new_ayanamsa, calculate_ayanamsa
 from app.services.planets import calculate_planet_positions
 from app.services.houses import calculate_house_cusps, calculate_ascendant
 from app.services.dasha import get_full_dasha_info
-from app.services.horary import calculate_horary_chart, get_horary_info, generate_horary_table
+from app.services.horary import get_horary_info, generate_horary_table
 
 
 router = APIRouter()
 
 
-@router.post("/calculate", response_model=CalculationResponse)
+@router.post("/calculate", response_model=CalculationResponse, tags=["🔮 Chart Calculations"])
 async def calculate_chart(request: CalculationRequest):
     """
     Calculate complete KP astrology chart.
@@ -202,7 +202,7 @@ async def calculate_chart(request: CalculationRequest):
         raise HTTPException(status_code=500, detail=f"Calculation error: {str(e)}")
 
 
-@router.get("/locations", response_model=LocationListResponse)
+@router.get("/locations", response_model=LocationListResponse, tags=["📍 Locations"])
 async def get_locations():
     """
     Get list of available Sri Lanka locations.
@@ -219,7 +219,7 @@ async def get_locations():
     )
 
 
-@router.get("/locations/{location_key}")
+@router.get("/locations/{location_key}", tags=["📍 Locations"])
 async def get_single_location(location_key: str):
     """
     Get details for a specific Sri Lanka location.
@@ -242,7 +242,7 @@ async def get_single_location(location_key: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/health")
+@router.get("/health", tags=["🔧 Utilities"])
 async def health_check():
     """
     Health check endpoint.
@@ -256,7 +256,7 @@ async def health_check():
     }
 
 
-@router.get("/ayanamsa")
+@router.get("/ayanamsa", tags=["🔧 Utilities"])
 async def get_ayanamsa(
     date: str, 
     time: str = "12:00", 
@@ -305,25 +305,33 @@ async def get_ayanamsa(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/calculate-horary", response_model=HoraryResponse)
+@router.post("/calculate-horary", response_model=HoraryResponse, tags=["🎯 Horary Astrology"])
 async def calculate_horary_endpoint(request: HoraryRequest):
     """
     Calculate KP Horary chart based on number (1-249).
     
-    The KP Horary system divides the zodiac into 249 sub-divisions,
-    each with a unique Sign-Star-Sub combination. The horary number
-    determines the Ascendant degree for the chart.
+    The KP Horary system uses the horary number ONLY to determine the
+    Ascendant (Lagna). All planetary positions and house cusps are
+    calculated for the time of judgment (when the question is asked).
     
-    The system will:
-    1. Look up the target Ascendant degree for the horary number
-    2. Find the time on the given date when Ascendant matches
-    3. Calculate the complete chart for that time
+    If time is not provided, the server's current time (converted to the
+    location's timezone) is used automatically.
     
-    Example request:
+    Example request (auto time):
     ```json
     {
         "horary_number": 56,
-        "date": "2026-01-27",
+        "date": "2026-02-18",
+        "location": "colombo"
+    }
+    ```
+    
+    Example request (manual time):
+    ```json
+    {
+        "horary_number": 56,
+        "date": "2026-02-18",
+        "time": "21:15",
         "location": "colombo"
     }
     ```
@@ -356,26 +364,25 @@ async def calculate_horary_endpoint(request: HoraryRequest):
         month = int(date_parts[1])
         day = int(date_parts[2])
         
-        # Calculate horary chart
-        horary_result = calculate_horary_chart(
-            request.horary_number,
-            year, month, day,
-            latitude, longitude_geo,
-            timezone
-        )
+        # Determine time of judgment
+        # If time is not provided, use server's current time in the location's timezone
+        if request.time:
+            time_parts = request.time.split(":")
+            hour = int(time_parts[0])
+            minute = int(time_parts[1])
+            second = 0
+        else:
+            from datetime import timedelta
+            # Get current UTC time, then offset by the location's timezone
+            now_utc = datetime.utcnow()
+            local_time = now_utc + timedelta(hours=timezone)
+            hour = local_time.hour
+            minute = local_time.minute
+            second = local_time.second
         
-        if not horary_result or not horary_result.get("success"):
-            error_msg = horary_result.get("error", "Failed to find matching time") if horary_result else "Calculation failed"
-            raise HTTPException(status_code=400, detail=error_msg)
+        judgment_time_str = f"{hour:02d}:{minute:02d}"
         
-        # Get the calculated time and parse it
-        calculated_time = horary_result["calculated_time"]
-        time_parts = calculated_time.split(":")
-        hour = int(time_parts[0])
-        minute = int(time_parts[1])
-        second = int(time_parts[2]) if len(time_parts) > 2 else 0
-        
-        # Calculate Julian Day for the found time
+        # Calculate Julian Day for the time of judgment
         jd = date_to_julian_day(year, month, day, hour, minute, second, timezone)
         
         # Calculate Ayanamsa (supports old, new, or manual)
@@ -386,32 +393,50 @@ async def calculate_horary_endpoint(request: HoraryRequest):
         )
         ayanamsa_dms = format_degrees_dms(ayanamsa)
         
-        # Calculate planetary positions
+        # Calculate planetary positions at the time of judgment
         planets = calculate_planet_positions(jd, ayanamsa)
         
-        # Calculate house cusps
+        # Calculate house cusps at the time of judgment
         houses = calculate_house_cusps(jd, latitude, longitude_geo, ayanamsa)
         
-        # Calculate Ascendant
-        ascendant = calculate_ascendant(jd, latitude, longitude_geo, ayanamsa)
-        
-        # Get horary info
+        # =====================================================================
+        # HORARY ASCENDANT: Override with horary number's degree
+        # In KP Horary, the Ascendant is determined by the horary number,
+        # NOT by the astronomical Ascendant at the time of judgment.
+        # =====================================================================
         horary_info = get_horary_info(request.horary_number)
+        horary_asc_longitude = horary_info["start_longitude"]
+        
+        # Apply ayanamsa to get sidereal horary Ascendant
+        # The horary table stores sidereal longitudes already, so use directly
+        from app.services.sublord import get_sign_star_sub
+        horary_asc_details = get_sign_star_sub(horary_asc_longitude)
+        
+        ascendant_data = {
+            "longitude": round(horary_asc_longitude, 6),
+            "longitude_dms": horary_asc_details["longitude_dms"],
+            "sign": horary_asc_details["sign"]["name"],
+            "sign_lord": horary_asc_details["sign"]["lord"],
+            "star": horary_asc_details["star"]["name"],
+            "star_lord": horary_asc_details["star"]["lord"],
+            "sub_lord": horary_asc_details["sub_lord"],
+            "sub_sub_lord": horary_asc_details.get("sub_sub_lord", "")
+        }
         
         # Build response
-        return HoraryResponse(
+        response = HoraryResponse(
             success=True,
             horary=HoraryInfo(
                 number=request.horary_number,
-                target_ascendant=horary_result["target_ascendant"],
-                target_ascendant_dms=format_degrees_dms(horary_result["target_ascendant"]),
+                target_ascendant=horary_asc_longitude,
+                target_ascendant_dms=format_degrees_dms(horary_asc_longitude),
                 sign=horary_info["sign"],
                 sign_lord=horary_info["sign_lord"],
                 star=horary_info["nakshatra"],
                 star_lord=horary_info["star_lord"],
                 sub_lord=horary_info["sub_lord"]
             ),
-            calculated_time=calculated_time,
+            time=judgment_time_str,
             date=request.date,
             location=LocationUsed(
                 name=location_name,
@@ -426,19 +451,47 @@ async def calculate_horary_endpoint(request: HoraryRequest):
                 type=ayanamsa_type_label
             ),
             ascendant=AscendantInfo(
-                longitude=ascendant["longitude"],
-                longitude_dms=ascendant["longitude_dms"],
-                sign=ascendant["sign"],
-                sign_lord=ascendant["sign_lord"],
-                star=ascendant["star"],
-                star_lord=ascendant["star_lord"],
-                sub_lord=ascendant["sub_lord"],
-                sub_sub_lord=ascendant.get("sub_sub_lord", "")
+                longitude=ascendant_data["longitude"],
+                longitude_dms=ascendant_data["longitude_dms"],
+                sign=ascendant_data["sign"],
+                sign_lord=ascendant_data["sign_lord"],
+                star=ascendant_data["star"],
+                star_lord=ascendant_data["star_lord"],
+                sub_lord=ascendant_data["sub_lord"],
+                sub_sub_lord=ascendant_data.get("sub_sub_lord", "")
             ),
             planets=[PlanetPosition(**p) for p in planets],
             houses=[HouseCusp(**h) for h in houses],
             house_system="Placidus"
         )
+        
+        # Add Vimshottari Dasha information
+        # Find Moon's longitude for Dasha calculation
+        moon_longitude = None
+        for planet in planets:
+            if planet["name"] == "Moon":
+                moon_longitude = planet["longitude"]
+                break
+        
+        if moon_longitude is not None:
+            try:
+                judgment_datetime = datetime(year, month, day, hour, minute, second)
+                dasha_data = get_full_dasha_info(moon_longitude, judgment_datetime)
+                
+                response_dict = response.model_dump()
+                response_dict["dasha"] = {
+                    "birth_dasha_lord": dasha_data["birth_dasha_lord"],
+                    "birth_dasha_balance_years": dasha_data["birth_dasha_balance_years"],
+                    "birth_nakshatra": dasha_data["birth_nakshatra"],
+                    "mahadasha_periods": dasha_data["mahadasha_periods"],
+                    "current_dasha": dasha_data.get("current_dasha")
+                }
+                return response_dict
+            except Exception as dasha_error:
+                import logging
+                logging.warning(f"Horary Dasha calculation error: {dasha_error}")
+        
+        return response
         
     except HTTPException:
         raise
@@ -446,7 +499,7 @@ async def calculate_horary_endpoint(request: HoraryRequest):
         raise HTTPException(status_code=500, detail=f"Horary calculation error: {str(e)}")
 
 
-@router.get("/horary-table")
+@router.get("/horary-table", tags=["🎯 Horary Astrology"])
 async def get_horary_table_endpoint():
     """
     Get the complete KP Horary number table (1-249).

@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KP Astrology API — Documentation</title>
+    <meta name="description" content="Professional API documentation for KP Astrology REST API — Krishnamurti Padhdhati calculations">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #111128;
+            --bg-card: #161638;
+            --bg-card-hover: #1c1c45;
+            --bg-code: #0d0d24;
+            --border: #2a2a5a;
+            --border-glow: #6c5ce7;
+            --text-primary: #e8e8f0;
+            --text-secondary: #a0a0c0;
+            --text-muted: #6a6a90;
+            --accent-purple: #6c5ce7;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --accent-cyan: #06b6d4;
+            --method-get: #10b981;
+            --method-post: #3b82f6;
+            --method-get-bg: rgba(16,185,129,0.1);
+            --method-post-bg: rgba(59,130,246,0.1);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+            --shadow-glow: 0 0 30px rgba(108,92,231,0.15);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.65;
+            overflow-x: hidden;
+        }
+
+        /* === HERO SECTION === */
+        .hero {
+            position: relative;
+            padding: 80px 20px 60px;
+            text-align: center;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0a0a1a 0%, #15153a 50%, #0a0a1a 100%);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 50%, rgba(108,92,231,0.08) 0%, transparent 60%),
+                        radial-gradient(ellipse at 70% 50%, rgba(59,130,246,0.06) 0%, transparent 60%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-2%, 2%); }
+        }
+
+        .hero-content { position: relative; z-index: 1; max-width: 800px; margin: auto; }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--accent-purple);
+            background: rgba(108,92,231,0.1);
+            border: 1px solid rgba(108,92,231,0.25);
+            margin-bottom: 24px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #e8e8f0, #6c5ce7, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 32px;
+        }
+
+        .hero-nav {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .hero-nav .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(108,92,231,0.3);
+        }
+        .hero-nav .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(108,92,231,0.45);
+        }
+
+        .hero-nav .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .hero-nav .btn-secondary:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+            border-color: var(--accent-purple);
+        }
+
+        /* === LAYOUT === */
+        .container { max-width: 1100px; margin: auto; padding: 0 24px; }
+
+        .section { padding: 60px 0; }
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent-purple);
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .section-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 36px;
+            max-width: 700px;
+        }
+
+        /* === BASE URL BAR === */
+        .base-url-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        .base-url-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+        .base-url-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--accent-cyan);
+            background: var(--bg-code);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        /* === FEATURES GRID === */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .feature-card {
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            border-color: var(--accent-purple);
+            background: var(--bg-card-hover);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-2px);
+        }
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+        .feature-card h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .feature-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* === ENDPOINT CARDS === */
+        .endpoint-group {
+            margin-bottom: 48px;
+        }
+        .endpoint-group-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .endpoint-group-icon { font-size: 1.3rem; }
+        .endpoint-group-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+        .endpoint-group-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        .endpoint-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .endpoint-card:hover {
+            border-color: rgba(108,92,231,0.4);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+        .endpoint-header:hover { background: rgba(255,255,255,0.02); }
+
+        .method-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            min-width: 56px;
+            text-align: center;
+        }
+        .method-get {
+            background: var(--method-get-bg);
+            color: var(--method-get);
+            border: 1px solid rgba(16,185,129,0.25);
+        }
+        .method-post {
+            background: var(--method-post-bg);
+            color: var(--method-post);
+            border: 1px solid rgba(59,130,246,0.25);
+        }
+
+        .endpoint-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .endpoint-path .param {
+            color: var(--accent-amber);
+        }
+
+        .endpoint-summary {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        .endpoint-chevron {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: transform 0.3s ease;
+            margin-left: 8px;
+        }
+        .endpoint-card.open .endpoint-chevron { transform: rotate(90deg); }
+
+        .endpoint-body {
+            display: none;
+            padding: 0 20px 20px;
+            border-top: 1px solid var(--border);
+        }
+        .endpoint-card.open .endpoint-body { display: block; }
+
+        .endpoint-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding: 16px 0;
+            line-height: 1.7;
+        }
+
+        /* === TABLES === */
+        .params-section { margin-top: 16px; }
+        .params-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .params-table th {
+            text-align: left;
+            padding: 10px 14px;
+            background: var(--bg-code);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        .params-table th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+        .params-table th:last-child { border-radius: 0 var(--radius-sm) 0 0; }
+
+        .params-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(42,42,90,0.4);
+            vertical-align: top;
+        }
+        .params-table tr:last-child td { border-bottom: none; }
+
+        .param-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--accent-cyan);
+        }
+        .param-required {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+        }
+        .param-required.yes {
+            background: rgba(244,63,94,0.15);
+            color: var(--accent-rose);
+        }
+        .param-required.no {
+            background: rgba(160,160,192,0.1);
+            color: var(--text-muted);
+        }
+        .param-type {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-amber);
+        }
+        .param-desc { color: var(--text-secondary); }
+        .param-default {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-green);
+        }
+
+        /* === CODE BLOCKS === */
+        .code-block {
+            border-radius: var(--radius-md);
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            margin: 12px 0;
+            overflow: hidden;
+        }
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border);
+        }
+        .code-lang {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+        .copy-btn {
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            border-color: var(--accent-purple);
+            color: var(--accent-purple);
+        }
+        .code-body {
+            padding: 14px 18px;
+            overflow-x: auto;
+        }
+        .code-body pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            white-space: pre;
+        }
+
+        /* === SCHEMA SECTION === */
+        .schema-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 14px;
+        }
+        .schema-card {
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .schema-card:hover {
+            border-color: var(--accent-purple);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-2px);
+        }
+        .schema-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 6px;
+        }
+        .schema-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        .schema-fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .schema-field-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            background: rgba(108,92,231,0.08);
+            color: var(--text-muted);
+            border: 1px solid rgba(42,42,90,0.4);
+        }
+
+        /* === RESPONSE BADGE === */
+        .response-badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .response-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+        .response-badge.success {
+            background: rgba(16,185,129,0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .response-badge.error {
+            background: rgba(244,63,94,0.1);
+            color: var(--accent-rose);
+            border: 1px solid rgba(244,63,94,0.2);
+        }
+
+        /* === FOOTER === */
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .footer a {
+            color: var(--accent-purple);
+            text-decoration: none;
+        }
+        .footer a:hover { text-decoration: underline; }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in {
+            opacity: 0;
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .animate-in:nth-child(1) { animation-delay: 0.05s; }
+        .animate-in:nth-child(2) { animation-delay: 0.1s; }
+        .animate-in:nth-child(3) { animation-delay: 0.15s; }
+        .animate-in:nth-child(4) { animation-delay: 0.2s; }
+        .animate-in:nth-child(5) { animation-delay: 0.25s; }
+        .animate-in:nth-child(6) { animation-delay: 0.3s; }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .hero { padding: 50px 16px 40px; }
+            .endpoint-header { flex-wrap: wrap; gap: 8px; }
+            .endpoint-summary { margin-left: 0; width: 100%; margin-top: 4px; }
+            .params-table { font-size: 0.8rem; }
+            .endpoint-group-desc { display: none; }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===================== HERO ===================== -->
+    <header class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">✦ Version 1.0.0</div>
+            <h1>KP Astrology API</h1>
+            <p>Krishnamurti Padhdhati astrology calculation REST API with Swiss Ephemeris precision and complete Vimshottari Dasha analysis.</p>
+            <nav class="hero-nav">
+                <a href="/docs" class="btn-primary">⚡ Swagger UI</a>
+                <a href="/redoc" class="btn-secondary">📘 ReDoc</a>
+                <a href="/openapi.json" class="btn-secondary">{ } OpenAPI JSON</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- ===================== BASE URL ===================== -->
+        <section class="section">
+            <div class="base-url-bar">
+                <span class="base-url-label">Base URL</span>
+                <code class="base-url-value">http://localhost:8000/api/v1</code>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card animate-in">
+                    <div class="feature-icon">🔮</div>
+                    <h3>KP New Ayanamsa</h3>
+                    <p>Prof. K. Balachandran formula from KP & Astrology Year Book 2003</p>
+                </div>
+                <div class="feature-card animate-in">
+                    <div class="feature-icon">🏠</div>
+                    <h3>Placidus Houses</h3>
+                    <p>Semi-Arc house system as specified by KP methodology</p>
+                </div>
+                <div class="feature-card animate-in">
+                    <div class="feature-icon">⭐</div>
+                    <h3>Full Lord Hierarchy</h3>
+                    <p>Sign Lord → Star Lord → Sub Lord → Sub-Sub Lord for all planets</p>
+                </div>
+                <div class="feature-card animate-in">
+                    <div class="feature-icon">📊</div>
+                    <h3>Vimshottari Dasha</h3>
+                    <p>Mahadasha → Antardasha → Pratyantardasha → Sukshma periods</p>
+                </div>
+                <div class="feature-card animate-in">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Horary System (1–249)</h3>
+                    <p>Complete KP Horary sub-division system with auto time-finding</p>
+                </div>
+                <div class="feature-card animate-in">
+                    <div class="feature-icon">📍</div>
+                    <h3>Sri Lanka Locations</h3>
+                    <p>Pre-configured database of 25+ cities with coordinates</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== ENDPOINTS ===================== -->
+        <section class="section" id="endpoints">
+            <div class="section-label">API Reference</div>
+            <h2 class="section-title">Endpoints</h2>
+            <p class="section-desc">All endpoints are prefixed with <code class="base-url-value" style="font-size:0.8rem;padding:3px 10px">/api/v1</code></p>
+
+            <!-- GROUP: Chart Calculations -->
+            <div class="endpoint-group">
+                <div class="endpoint-group-header">
+                    <span class="endpoint-group-icon">🔮</span>
+                    <span class="endpoint-group-title">Chart Calculations</span>
+                    <span class="endpoint-group-desc">Core KP astrology chart computation</span>
+                </div>
+
+                <div class="endpoint-card" id="ep-calculate">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-calculate')">
+                        <span class="method-badge method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/calculate</span>
+                        <span class="endpoint-summary">Calculate complete KP astrology chart</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            Calculates planetary positions, house cusps (Bhawa), ascendant details, ayanamsa, and Vimshottari Dasha. Provide either a Sri Lanka location key or direct coordinates.
+                        </div>
+
+                        <div class="params-section">
+                            <div class="params-title">Request Body (JSON)</div>
+                            <table class="params-table">
+                                <thead>
+                                    <tr><th>Parameter</th><th>Type</th><th>Description</th><th>Default</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">date</span><span class="param-required yes">required</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Birth date in YYYY-MM-DD format</td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">time</span><span class="param-required yes">required</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Birth time in HH:MM format (24-hour)</td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">location</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Sri Lanka location key (e.g., "colombo", "galle")</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">latitude</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Latitude in decimal degrees (positive = North)</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">longitude</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Longitude in decimal degrees (positive = East)</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">timezone</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Timezone offset from UTC</td>
+                                        <td><span class="param-default">5.5</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">ayanamsa_type</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">"old" (KSK), "new" (Balachandran), or "manual"</td>
+                                        <td><span class="param-default">"new"</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">manual_ayanamsa</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Custom ayanamsa value (required when type="manual")</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="code-block" style="margin-top:16px">
+                            <div class="code-header">
+                                <span class="code-lang">Example — Using location key</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <div class="code-body">
+<pre>{
+  "date": "2002-04-21",
+  "time": "08:09",
+  "location": "galle"
+}</pre>
+                            </div>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">Example — Using coordinates</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <div class="code-body">
+<pre>{
+  "date": "2002-04-21",
+  "time": "08:09",
+  "latitude": 6.0535,
+  "longitude": 80.2210,
+  "timezone": 5.5
+}</pre>
+                            </div>
+                        </div>
+
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — CalculationResponse</span>
+                            <span class="response-badge error">400 — Invalid location / missing params</span>
+                            <span class="response-badge error">422 — Validation Error</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GROUP: Horary Astrology -->
+            <div class="endpoint-group">
+                <div class="endpoint-group-header">
+                    <span class="endpoint-group-icon">🎯</span>
+                    <span class="endpoint-group-title">Horary Astrology</span>
+                    <span class="endpoint-group-desc">KP Horary (Prashna) system</span>
+                </div>
+
+                <div class="endpoint-card" id="ep-horary">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-horary')">
+                        <span class="method-badge method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/calculate-horary</span>
+                        <span class="endpoint-summary">Calculate KP Horary chart (1-249 system)</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            The KP Horary system divides the zodiac into 249 sub-divisions, each with a unique Sign-Star-Sub combination. The horary number determines the Ascendant degree. The system finds the time on the given date when Ascendant matches that degree and calculates the complete chart.
+                        </div>
+
+                        <div class="params-section">
+                            <div class="params-title">Request Body (JSON)</div>
+                            <table class="params-table">
+                                <thead>
+                                    <tr><th>Parameter</th><th>Type</th><th>Description</th><th>Default</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">horary_number</span><span class="param-required yes">required</span></td>
+                                        <td><span class="param-type">integer (1-249)</span></td>
+                                        <td class="param-desc">KP Horary number</td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">date</span><span class="param-required yes">required</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Date of query in YYYY-MM-DD format</td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">time</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Seed time in HH:MM (used as search hint)</td>
+                                        <td><span class="param-default">"12:00"</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">location</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Sri Lanka location key</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">latitude</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Latitude in decimal degrees</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">longitude</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Longitude in decimal degrees</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">timezone</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Timezone offset from UTC</td>
+                                        <td><span class="param-default">5.5</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">ayanamsa_type</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">"old", "new", or "manual"</td>
+                                        <td><span class="param-default">"new"</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="code-block" style="margin-top:16px">
+                            <div class="code-header">
+                                <span class="code-lang">Example Request</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <div class="code-body">
+<pre>{
+  "horary_number": 56,
+  "date": "2026-01-27",
+  "location": "colombo"
+}</pre>
+                            </div>
+                        </div>
+
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — HoraryResponse</span>
+                            <span class="response-badge error">400 — Invalid number / no matching time</span>
+                            <span class="response-badge error">422 — Validation Error</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint-card" id="ep-horary-table">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-horary-table')">
+                        <span class="method-badge method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/horary-table</span>
+                        <span class="endpoint-summary">Get complete horary number table (1–249)</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            Returns the mapping of each horary number (1–249) to its zodiac position and Sign-Star-Sub combination. Useful for reference and verification.
+                        </div>
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — Array of 249 entries</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GROUP: Locations -->
+            <div class="endpoint-group">
+                <div class="endpoint-group-header">
+                    <span class="endpoint-group-icon">📍</span>
+                    <span class="endpoint-group-title">Locations</span>
+                    <span class="endpoint-group-desc">Sri Lanka location database</span>
+                </div>
+
+                <div class="endpoint-card" id="ep-locations">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-locations')">
+                        <span class="method-badge method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/locations</span>
+                        <span class="endpoint-summary">List all available Sri Lanka locations</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            Returns all pre-configured Sri Lanka locations with their coordinates. Use the <code>key</code> value in the <code>/calculate</code> endpoint's <code>location</code> field.
+                        </div>
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — LocationListResponse</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint-card" id="ep-location-single">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-location-single')">
+                        <span class="method-badge method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/locations/<span class="param">{location_key}</span></span>
+                        <span class="endpoint-summary">Get a single location's details</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            Retrieve coordinates and name for a specific Sri Lanka location.
+                        </div>
+                        <div class="params-section">
+                            <div class="params-title">Path Parameters</div>
+                            <table class="params-table">
+                                <thead>
+                                    <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">location_key</span><span class="param-required yes">required</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Location identifier (e.g., "colombo", "galle")</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — LocationInfo</span>
+                            <span class="response-badge error">404 — Location not found</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GROUP: Utilities -->
+            <div class="endpoint-group">
+                <div class="endpoint-group-header">
+                    <span class="endpoint-group-icon">🔧</span>
+                    <span class="endpoint-group-title">Utilities</span>
+                    <span class="endpoint-group-desc">Ayanamsa lookup, health, and info</span>
+                </div>
+
+                <div class="endpoint-card" id="ep-ayanamsa">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-ayanamsa')">
+                        <span class="method-badge method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/ayanamsa</span>
+                        <span class="endpoint-summary">Get ayanamsa for a specific date</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            Calculate the ayanamsa value for any date. Supports KSK (old), Balachandran (new), or manual ayanamsa types.
+                        </div>
+                        <div class="params-section">
+                            <div class="params-title">Query Parameters</div>
+                            <table class="params-table">
+                                <thead>
+                                    <tr><th>Parameter</th><th>Type</th><th>Description</th><th>Default</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">date</span><span class="param-required yes">required</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Date in YYYY-MM-DD format</td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">time</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">Time in HH:MM format</td>
+                                        <td><span class="param-default">"12:00"</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">timezone</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Timezone offset from UTC</td>
+                                        <td><span class="param-default">5.5</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">ayanamsa_type</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td class="param-desc">"old" (KSK), "new" (Balachandran), or "manual"</td>
+                                        <td><span class="param-default">"new"</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">manual_ayanamsa</span><span class="param-required no">optional</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td class="param-desc">Custom value when type="manual"</td>
+                                        <td><span class="param-default">null</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="code-block" style="margin-top:16px">
+                            <div class="code-header">
+                                <span class="code-lang">Example</span>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                            <div class="code-body">
+<pre>GET /api/v1/ayanamsa?date=2024-01-15&time=12:00&timezone=5.5</pre>
+                            </div>
+                        </div>
+
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — Ayanamsa details</span>
+                            <span class="response-badge error">400 — Invalid date format</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint-card" id="ep-health">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-health')">
+                        <span class="method-badge method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/health</span>
+                        <span class="endpoint-summary">Health check</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            Returns the health status of the API service.
+                        </div>
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-lang">Response</span>
+                            </div>
+                            <div class="code-body">
+<pre>{
+  "status": "healthy",
+  "service": "KP Astrology API",
+  "version": "1.0.0"
+}</pre>
+                            </div>
+                        </div>
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — Healthy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint-card" id="ep-root">
+                    <div class="endpoint-header" onclick="toggleEndpoint('ep-root')">
+                        <span class="method-badge method-get">GET</span>
+                        <span class="endpoint-path">/</span>
+                        <span class="endpoint-summary">API info and navigation links</span>
+                        <span class="endpoint-chevron">▶</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="endpoint-desc">
+                            Returns API name, version, and links to documentation and all available endpoints.
+                        </div>
+                        <div class="response-badges">
+                            <span class="response-badge success">200 — API info JSON</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== SCHEMAS ===================== -->
+        <section class="section" id="schemas">
+            <div class="section-label">Data Models</div>
+            <h2 class="section-title">Schemas</h2>
+            <p class="section-desc">Pydantic models used in request and response payloads</p>
+
+            <div class="schema-grid">
+                <div class="schema-card animate-in">
+                    <div class="schema-name">CalculationRequest</div>
+                    <div class="schema-desc">Input for KP chart calculation. Supports location key or direct coordinates.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">date</span>
+                        <span class="schema-field-tag">time</span>
+                        <span class="schema-field-tag">location</span>
+                        <span class="schema-field-tag">latitude</span>
+                        <span class="schema-field-tag">longitude</span>
+                        <span class="schema-field-tag">timezone</span>
+                        <span class="schema-field-tag">ayanamsa_type</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">CalculationResponse</div>
+                    <div class="schema-desc">Full chart response with planets, houses, ascendant, and dasha.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">planets[]</span>
+                        <span class="schema-field-tag">houses[]</span>
+                        <span class="schema-field-tag">ascendant</span>
+                        <span class="schema-field-tag">ayanamsa</span>
+                        <span class="schema-field-tag">dasha</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">PlanetPosition</div>
+                    <div class="schema-desc">Planetary position with complete KP lordship details.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">name</span>
+                        <span class="schema-field-tag">longitude</span>
+                        <span class="schema-field-tag">sign</span>
+                        <span class="schema-field-tag">sign_lord</span>
+                        <span class="schema-field-tag">star_lord</span>
+                        <span class="schema-field-tag">sub_lord</span>
+                        <span class="schema-field-tag">retrograde</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">HouseCusp</div>
+                    <div class="schema-desc">House cusp (Bhawa) with KP lordship details.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">house</span>
+                        <span class="schema-field-tag">longitude</span>
+                        <span class="schema-field-tag">sign</span>
+                        <span class="schema-field-tag">sign_lord</span>
+                        <span class="schema-field-tag">star_lord</span>
+                        <span class="schema-field-tag">sub_lord</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">HoraryRequest</div>
+                    <div class="schema-desc">Input for KP Horary calculation with number (1–249).</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">horary_number</span>
+                        <span class="schema-field-tag">date</span>
+                        <span class="schema-field-tag">location</span>
+                        <span class="schema-field-tag">latitude</span>
+                        <span class="schema-field-tag">longitude</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">HoraryResponse</div>
+                    <div class="schema-desc">Full horary chart with calculated time and complete chart data.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">horary</span>
+                        <span class="schema-field-tag">calculated_time</span>
+                        <span class="schema-field-tag">planets[]</span>
+                        <span class="schema-field-tag">houses[]</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">AscendantInfo</div>
+                    <div class="schema-desc">Ascendant (Lagna) with sign, star, and sub lord details.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">longitude</span>
+                        <span class="schema-field-tag">sign</span>
+                        <span class="schema-field-tag">sign_lord</span>
+                        <span class="schema-field-tag">star_lord</span>
+                        <span class="schema-field-tag">sub_lord</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">DashaInfo</div>
+                    <div class="schema-desc">Vimshottari Dasha with Mahadasha, Antardasha, and current period.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">birth_dasha_lord</span>
+                        <span class="schema-field-tag">birth_nakshatra</span>
+                        <span class="schema-field-tag">mahadasha_periods[]</span>
+                        <span class="schema-field-tag">current_dasha</span>
+                    </div>
+                </div>
+
+                <div class="schema-card animate-in">
+                    <div class="schema-name">LocationInfo</div>
+                    <div class="schema-desc">Sri Lanka location entry with key, name, and coordinates.</div>
+                    <div class="schema-fields">
+                        <span class="schema-field-tag">key</span>
+                        <span class="schema-field-tag">name</span>
+                        <span class="schema-field-tag">latitude</span>
+                        <span class="schema-field-tag">longitude</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="footer">
+        <p>KP Astrology API v1.0.0 &nbsp;·&nbsp; Built with <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a> &nbsp;·&nbsp; <a href="/docs">Swagger UI</a> &nbsp;·&nbsp; <a href="/redoc">ReDoc</a></p>
+    </footer>
+
+    <script>
+        function toggleEndpoint(id) {
+            const card = document.getElementById(id);
+            card.classList.toggle('open');
+        }
+
+        function copyCode(btn) {
+            const code = btn.closest('.code-block').querySelector('pre').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.color = 'var(--accent-green)';
+                btn.style.borderColor = 'var(--accent-green)';
+                setTimeout(() => {
+                    btn.textContent = orig;
+                    btn.style.color = '';
+                    btn.style.borderColor = '';
+                }, 1500);
+            });
+        }
+
+        // Intersection Observer for scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.animate-in').forEach(el => {
+            el.style.animationPlayState = 'paused';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

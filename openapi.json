@@ -1,0 +1,1060 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "KP Astrology API",
+    "description": "\n## Krishnamurti Padhdhati (KP) Astrology REST API\n\nA comprehensive API for KP astrological calculations based on the teachings of \n**Prof. K.S. Krishnamurti**.\n\n### Features\n\n- **KP New Ayanamsa**: Uses the exact formula from Prof. K. Balachandran (KP & Astrology Year Book 2003)\n- **Placidus House System**: Semi-Arc system as specified by KP methodology\n- **Complete Lordship Hierarchy**: Sign Lord → Star Lord → Sub Lord → Sub-Sub Lord\n- **Sri Lanka Locations**: Pre-configured database of 25+ Sri Lankan cities\n- **High Accuracy**: Swiss Ephemeris (pyswisseph) for planetary calculations\n\n### Calculation Details\n\n- **Ayanamsa Formula**: NKPA = B + [T × P + (T² × A)] / 3600\n  - Base (B): 22°22'15.7\" at Jan 1, 1900\n  - Precession (P): 50.2388475\"/year (Newcomb's)\n  - Adjustment (A): 0.000111\"/year²\n\n- **Vimshottari Dasha Order**: Ketu → Venus → Sun → Moon → Mars → Rahu → Jupiter → Saturn → Mercury\n\n- **Planets Calculated**: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu\n\n### Usage\n\nUse the `/calculate` endpoint with either:\n1. Sri Lanka location key (e.g., `\"location\": \"colombo\"`)\n2. Direct coordinates with latitude, longitude, and timezone\n    ",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/calculate": {
+      "post": {
+        "tags": [
+          "KP Astrology"
+        ],
+        "summary": "Calculate Chart",
+        "description": "Calculate complete KP astrology chart.\n\nThis endpoint calculates:\n- Planetary positions with Sign/Star/Sub lords\n- House cusps (Bhawa) with Sign/Star/Sub lords\n- Ascendant details\n- KP New Ayanamsa\n\nEither provide latitude/longitude directly, or use the 'location'\nparameter to select a Sri Lanka location.\n\nExample request with location:\n```json\n{\n    \"date\": \"2002-04-21\",\n    \"time\": \"08:09\",\n    \"location\": \"galle\"\n}\n```\n\nExample with coordinates:\n```json\n{\n    \"date\": \"2002-04-21\",\n    \"time\": \"08:09\",\n    \"latitude\": 6.0535,\n    \"longitude\": 80.2210,\n    \"timezone\": 5.5\n}\n```",
+        "operationId": "calculate_chart_api_v1_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalculationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalculationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/locations": {
+      "get": {
+        "tags": [
+          "KP Astrology"
+        ],
+        "summary": "Get Locations",
+        "description": "Get list of available Sri Lanka locations.\n\nReturns all pre-configured locations with their coordinates.\nUse the 'key' value in the /calculate endpoint's 'location' field.",
+        "operationId": "get_locations_api_v1_locations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/locations/{location_key}": {
+      "get": {
+        "tags": [
+          "KP Astrology"
+        ],
+        "summary": "Get Single Location",
+        "description": "Get details for a specific Sri Lanka location.\n\nArgs:\n    location_key: Location identifier (e.g., 'colombo', 'galle')",
+        "operationId": "get_single_location_api_v1_locations__location_key__get",
+        "parameters": [
+          {
+            "name": "location_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Location Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "KP Astrology"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint.\n\nReturns status of the API.",
+        "operationId": "health_check_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ayanamsa": {
+      "get": {
+        "tags": [
+          "KP Astrology"
+        ],
+        "summary": "Get Ayanamsa",
+        "description": "Get ayanamsa for a specific date.\n\nArgs:\n    date: Date in YYYY-MM-DD format\n    time: Time in HH:MM format (default: 12:00)\n    timezone: Timezone offset (default: 5.5)\n    ayanamsa_type: 'old' (KSK), 'new' (Balachandran), or 'manual'\n    manual_ayanamsa: Custom value when type='manual'",
+        "operationId": "get_ayanamsa_api_v1_ayanamsa_get",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Date"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "12:00",
+              "title": "Time"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 5.5,
+              "title": "Timezone"
+            }
+          },
+          {
+            "name": "ayanamsa_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "new",
+              "title": "Ayanamsa Type"
+            }
+          },
+          {
+            "name": "manual_ayanamsa",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "title": "Manual Ayanamsa"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calculate-horary": {
+      "post": {
+        "tags": [
+          "KP Astrology"
+        ],
+        "summary": "Calculate Horary Endpoint",
+        "description": "Calculate KP Horary chart based on number (1-249).\n\nThe KP Horary system divides the zodiac into 249 sub-divisions,\neach with a unique Sign-Star-Sub combination. The horary number\ndetermines the Ascendant degree for the chart.\n\nThe system will:\n1. Look up the target Ascendant degree for the horary number\n2. Find the time on the given date when Ascendant matches\n3. Calculate the complete chart for that time\n\nExample request:\n```json\n{\n    \"horary_number\": 56,\n    \"date\": \"2026-01-27\",\n    \"location\": \"colombo\"\n}\n```",
+        "operationId": "calculate_horary_endpoint_api_v1_calculate_horary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoraryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoraryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/horary-table": {
+      "get": {
+        "tags": [
+          "KP Astrology"
+        ],
+        "summary": "Get Horary Table Endpoint",
+        "description": "Get the complete KP Horary number table (1-249).\n\nReturns the mapping of each horary number to its zodiac position\nand Sign-Star-Sub combination.\n\nThis is useful for reference and verification.",
+        "operationId": "get_horary_table_endpoint_api_v1_horary_table_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Root endpoint with API information.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AscendantInfo": {
+        "properties": {
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "longitude_dms": {
+            "type": "string",
+            "title": "Longitude Dms"
+          },
+          "sign": {
+            "type": "string",
+            "title": "Sign"
+          },
+          "sign_lord": {
+            "type": "string",
+            "title": "Sign Lord"
+          },
+          "star": {
+            "type": "string",
+            "title": "Star"
+          },
+          "star_lord": {
+            "type": "string",
+            "title": "Star Lord"
+          },
+          "sub_lord": {
+            "type": "string",
+            "title": "Sub Lord"
+          },
+          "sub_sub_lord": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Sub Lord",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "longitude",
+          "longitude_dms",
+          "sign",
+          "sign_lord",
+          "star",
+          "star_lord",
+          "sub_lord"
+        ],
+        "title": "AscendantInfo",
+        "description": "Ascendant (Lagna) information."
+      },
+      "AyanamsaInfo": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "description": "Ayanamsa in decimal degrees"
+          },
+          "dms": {
+            "type": "string",
+            "title": "Dms",
+            "description": "Ayanamsa in degrees-minutes-seconds"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Ayanamsa type used",
+            "default": "KP New (Balachandran)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "dms"
+        ],
+        "title": "AyanamsaInfo",
+        "description": "Ayanamsa calculation details."
+      },
+      "CalculationRequest": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "Birth date in YYYY-MM-DD format"
+          },
+          "time": {
+            "type": "string",
+            "title": "Time",
+            "description": "Birth time in HH:MM format (24-hour)"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude",
+            "description": "Latitude in decimal degrees (positive for North)"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude",
+            "description": "Longitude in decimal degrees (positive for East)"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone",
+            "description": "Timezone offset from UTC (default: 5.5 for Sri Lanka)",
+            "default": 5.5
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "Sri Lanka location key (e.g., 'colombo', 'galle')"
+          },
+          "ayanamsa_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ayanamsa Type",
+            "description": "Ayanamsa type: 'old' (KSK), 'new' (Balachandran), or 'manual'",
+            "default": "new"
+          },
+          "manual_ayanamsa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Ayanamsa",
+            "description": "Custom ayanamsa value in degrees (required when ayanamsa_type='manual')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "time"
+        ],
+        "title": "CalculationRequest",
+        "description": "Request model for KP calculations.\n\nSupports either direct coordinates or Sri Lanka location selection."
+      },
+      "CalculationResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "time": {
+            "type": "string",
+            "title": "Time"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationUsed"
+          },
+          "julian_day": {
+            "type": "number",
+            "title": "Julian Day"
+          },
+          "ayanamsa": {
+            "$ref": "#/components/schemas/AyanamsaInfo"
+          },
+          "ascendant": {
+            "$ref": "#/components/schemas/AscendantInfo"
+          },
+          "planets": {
+            "items": {
+              "$ref": "#/components/schemas/PlanetPosition"
+            },
+            "type": "array",
+            "title": "Planets"
+          },
+          "houses": {
+            "items": {
+              "$ref": "#/components/schemas/HouseCusp"
+            },
+            "type": "array",
+            "title": "Houses"
+          },
+          "house_system": {
+            "type": "string",
+            "title": "House System",
+            "default": "Placidus"
+          },
+          "dasha": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dasha"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "time",
+          "location",
+          "julian_day",
+          "ayanamsa",
+          "ascendant",
+          "planets",
+          "houses"
+        ],
+        "title": "CalculationResponse",
+        "description": "Complete KP calculation response.\n\nContains all planetary positions, house cusps, and ayanamsa details."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HoraryInfo": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "target_ascendant": {
+            "type": "number",
+            "title": "Target Ascendant",
+            "description": "Target Ascendant degree"
+          },
+          "target_ascendant_dms": {
+            "type": "string",
+            "title": "Target Ascendant Dms",
+            "description": "Target Ascendant in DMS format"
+          },
+          "sign": {
+            "type": "string",
+            "title": "Sign"
+          },
+          "sign_lord": {
+            "type": "string",
+            "title": "Sign Lord"
+          },
+          "star": {
+            "type": "string",
+            "title": "Star"
+          },
+          "star_lord": {
+            "type": "string",
+            "title": "Star Lord"
+          },
+          "sub_lord": {
+            "type": "string",
+            "title": "Sub Lord"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "target_ascendant",
+          "target_ascendant_dms",
+          "sign",
+          "sign_lord",
+          "star",
+          "star_lord",
+          "sub_lord"
+        ],
+        "title": "HoraryInfo",
+        "description": "Horary number details."
+      },
+      "HoraryRequest": {
+        "properties": {
+          "horary_number": {
+            "type": "integer",
+            "maximum": 249.0,
+            "minimum": 1.0,
+            "title": "Horary Number",
+            "description": "KP Horary number (1-249)"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "Date of query in YYYY-MM-DD format"
+          },
+          "time": {
+            "type": "string",
+            "title": "Time",
+            "description": "Seed time in HH:MM format (used as search hint)",
+            "default": "12:00"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude",
+            "description": "Latitude in decimal degrees"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude",
+            "description": "Longitude in decimal degrees"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone",
+            "description": "Timezone offset from UTC",
+            "default": 5.5
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "Sri Lanka location key"
+          },
+          "ayanamsa_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ayanamsa Type",
+            "description": "Ayanamsa type: 'old' (KSK), 'new' (Balachandran), or 'manual'",
+            "default": "new"
+          },
+          "manual_ayanamsa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Ayanamsa",
+            "description": "Custom ayanamsa value in degrees (required when ayanamsa_type='manual')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "horary_number",
+          "date"
+        ],
+        "title": "HoraryRequest",
+        "description": "Request model for KP Horary calculations.\n\nThe horary number (1-249) determines the Ascendant degree.\nThe system will find the time when Ascendant matches that degree."
+      },
+      "HoraryResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "horary": {
+            "$ref": "#/components/schemas/HoraryInfo"
+          },
+          "calculated_time": {
+            "type": "string",
+            "title": "Calculated Time",
+            "description": "Time when Ascendant matches (HH:MM:SS)"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationUsed"
+          },
+          "julian_day": {
+            "type": "number",
+            "title": "Julian Day"
+          },
+          "ayanamsa": {
+            "$ref": "#/components/schemas/AyanamsaInfo"
+          },
+          "ascendant": {
+            "$ref": "#/components/schemas/AscendantInfo"
+          },
+          "planets": {
+            "items": {
+              "$ref": "#/components/schemas/PlanetPosition"
+            },
+            "type": "array",
+            "title": "Planets"
+          },
+          "houses": {
+            "items": {
+              "$ref": "#/components/schemas/HouseCusp"
+            },
+            "type": "array",
+            "title": "Houses"
+          },
+          "house_system": {
+            "type": "string",
+            "title": "House System",
+            "default": "Placidus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "horary",
+          "calculated_time",
+          "date",
+          "location",
+          "julian_day",
+          "ayanamsa",
+          "ascendant",
+          "planets",
+          "houses"
+        ],
+        "title": "HoraryResponse",
+        "description": "Response model for KP Horary calculations.\n\nContains the horary details plus full chart like CalculationResponse."
+      },
+      "HouseCusp": {
+        "properties": {
+          "house": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "House",
+            "description": "House number (1-12)"
+          },
+          "bhawa": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Bhawa",
+            "description": "Bhawa number (same as house)"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude",
+            "description": "Sidereal longitude of cusp"
+          },
+          "longitude_dms": {
+            "type": "string",
+            "title": "Longitude Dms",
+            "description": "Longitude in degrees-minutes-seconds format"
+          },
+          "sign": {
+            "type": "string",
+            "title": "Sign"
+          },
+          "sign_lord": {
+            "type": "string",
+            "title": "Sign Lord"
+          },
+          "star": {
+            "type": "string",
+            "title": "Star"
+          },
+          "star_lord": {
+            "type": "string",
+            "title": "Star Lord"
+          },
+          "sub_lord": {
+            "type": "string",
+            "title": "Sub Lord"
+          },
+          "sub_sub_lord": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Sub Lord",
+            "default": ""
+          },
+          "pada": {
+            "type": "integer",
+            "title": "Pada"
+          }
+        },
+        "type": "object",
+        "required": [
+          "house",
+          "bhawa",
+          "longitude",
+          "longitude_dms",
+          "sign",
+          "sign_lord",
+          "star",
+          "star_lord",
+          "sub_lord",
+          "pada"
+        ],
+        "title": "HouseCusp",
+        "description": "House cusp (Bhawa) with KP details."
+      },
+      "LocationInfo": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "latitude",
+          "longitude"
+        ],
+        "title": "LocationInfo",
+        "description": "Location information from Sri Lanka database."
+      },
+      "LocationListResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/LocationInfo"
+            },
+            "type": "array",
+            "title": "Locations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "locations"
+        ],
+        "title": "LocationListResponse",
+        "description": "Response for listing available Sri Lanka locations."
+      },
+      "LocationUsed": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "timezone": {
+            "type": "number",
+            "title": "Timezone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "timezone"
+        ],
+        "title": "LocationUsed",
+        "description": "Location details used in calculation."
+      },
+      "PlanetPosition": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude",
+            "description": "Sidereal longitude (0-360)"
+          },
+          "longitude_dms": {
+            "type": "string",
+            "title": "Longitude Dms",
+            "description": "Longitude in degrees-minutes-seconds format"
+          },
+          "sign": {
+            "type": "string",
+            "title": "Sign"
+          },
+          "sign_lord": {
+            "type": "string",
+            "title": "Sign Lord"
+          },
+          "star": {
+            "type": "string",
+            "title": "Star"
+          },
+          "star_lord": {
+            "type": "string",
+            "title": "Star Lord"
+          },
+          "sub_lord": {
+            "type": "string",
+            "title": "Sub Lord"
+          },
+          "sub_sub_lord": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Sub Lord",
+            "default": ""
+          },
+          "pada": {
+            "type": "integer",
+            "title": "Pada"
+          },
+          "retrograde": {
+            "type": "boolean",
+            "title": "Retrograde",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "longitude",
+          "longitude_dms",
+          "sign",
+          "sign_lord",
+          "star",
+          "star_lord",
+          "sub_lord",
+          "pada"
+        ],
+        "title": "PlanetPosition",
+        "description": "Complete planetary position with KP details."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

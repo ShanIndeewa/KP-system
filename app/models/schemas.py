@@ -175,12 +175,13 @@ class HoraryRequest(BaseModel):
     """
     Request model for KP Horary calculations.
     
-    The horary number (1-249) determines the Ascendant degree.
-    The system will find the time when Ascendant matches that degree.
+    The horary number (1-249) determines the Ascendant (Lagna) degree.
+    Planetary positions and house cusps are calculated for the time of judgment.
+    If time is not provided, server's current time (in the location's timezone) is used.
     """
     horary_number: int = Field(..., ge=1, le=249, description="KP Horary number (1-249)")
     date: str = Field(..., description="Date of query in YYYY-MM-DD format")
-    time: str = Field("12:00", description="Seed time in HH:MM format (used as search hint)")
+    time: Optional[str] = Field(None, description="Time of judgment in HH:MM format (24-hour). If not provided, server current time is used.")
     latitude: Optional[float] = Field(None, description="Latitude in decimal degrees")
     longitude: Optional[float] = Field(None, description="Longitude in decimal degrees")
     timezone: Optional[float] = Field(5.5, description="Timezone offset from UTC")
@@ -221,10 +222,11 @@ class HoraryResponse(BaseModel):
     Response model for KP Horary calculations.
     
     Contains the horary details plus full chart like CalculationResponse.
+    Ascendant is determined by horary number; planets/houses by time of judgment.
     """
     success: bool = True
     horary: HoraryInfo
-    calculated_time: str = Field(..., description="Time when Ascendant matches (HH:MM:SS)")
+    time: str = Field(..., description="Time of judgment used (HH:MM)")
     date: str
     location: LocationUsed
     julian_day: float
@@ -233,6 +235,7 @@ class HoraryResponse(BaseModel):
     planets: List[PlanetPosition]
     houses: List[HouseCusp]
     house_system: str = "Placidus"
+    dasha: Optional[dict] = None
 
 
 # =============================================================================
