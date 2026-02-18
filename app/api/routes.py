@@ -36,7 +36,7 @@ from app.core.kp_data import get_location, list_locations, SRI_LANKA_LOCATIONS
 from app.services.astronomy import date_to_julian_day, format_degrees_dms
 from app.services.ayanamsa import calculate_kp_new_ayanamsa, calculate_ayanamsa
 from app.services.planets import calculate_planet_positions
-from app.services.houses import calculate_house_cusps, calculate_ascendant
+from app.services.houses import calculate_house_cusps, calculate_ascendant, rotate_house_cusps
 from app.services.dasha import get_full_dasha_info
 from app.services.horary import get_horary_info, generate_horary_table
 
@@ -400,15 +400,25 @@ async def calculate_horary_endpoint(request: HoraryRequest):
         houses = calculate_house_cusps(jd, latitude, longitude_geo, ayanamsa)
         
         # =====================================================================
-        # HORARY ASCENDANT: Override with horary number's degree
-        # In KP Horary, the Ascendant is determined by the horary number,
-        # NOT by the astronomical Ascendant at the time of judgment.
+        # HORARY ASCENDANT & HOUSE CUSP ROTATION
+        # In KP Horary, the Ascendant is determined by the horary number.
+        # All 12 house cusps must be rotated by the offset between the
+        # horary Ascendant and the astronomical Ascendant, so that house 1
+        # starts at the horary degree. Sign/Star/Sub are re-calculated
+        # for each rotated cusp.
         # =====================================================================
         horary_info = get_horary_info(request.horary_number)
         horary_asc_longitude = horary_info["start_longitude"]
         
-        # Apply ayanamsa to get sidereal horary Ascendant
-        # The horary table stores sidereal longitudes already, so use directly
+        # Get the astronomical sidereal Ascendant at judgment time
+        astronomical_asc = calculate_ascendant(jd, latitude, longitude_geo, ayanamsa)
+        astronomical_asc_longitude = astronomical_asc["longitude"]
+        
+        # Compute rotation offset and rotate all 12 house cusps
+        rotation_offset = horary_asc_longitude - astronomical_asc_longitude
+        houses = rotate_house_cusps(houses, rotation_offset)
+        
+        # Build horary Ascendant details from the horary number
         from app.services.sublord import get_sign_star_sub
         horary_asc_details = get_sign_star_sub(horary_asc_longitude)
         

@@ -71,6 +71,52 @@ def calculate_house_cusps(jd: float, latitude: float, longitude: float,
     return house_cusps
 
 
+def rotate_house_cusps(houses: List[Dict], rotation_offset: float) -> List[Dict]:
+    """
+    Rotate all 12 house cusps by a given offset (for KP Horary charts).
+    
+    In KP Horary astrology, the horary number determines the Ascendant
+    degree. All house cusps must be shifted by the difference between
+    the horary Ascendant and the astronomical Ascendant so that 
+    House 1 starts at the horary Ascendant degree.
+    
+    After rotation, Sign/Star/Sub details are re-calculated for each
+    new cusp position.
+    
+    Args:
+        houses: List of 12 house cusp dicts from calculate_house_cusps()
+        rotation_offset: Degrees to rotate (horary_asc - astronomical_asc)
+        
+    Returns:
+        List of 12 rotated house cusp dicts with re-calculated lordships
+    """
+    rotated = []
+    
+    for house in houses:
+        # Apply rotation offset and normalize to 0-360
+        new_longitude = normalize_angle(house["longitude"] + rotation_offset)
+        
+        # Re-calculate Sign/Star/Sub for the new cusp position
+        details = get_sign_star_sub(new_longitude)
+        
+        rotated.append({
+            "house": house["house"],
+            "bhawa": house["bhawa"],
+            "longitude": round(new_longitude, 6),
+            "longitude_dms": details["longitude_dms"],
+            "tropical_longitude": house.get("tropical_longitude", 0.0),
+            "sign": details["sign"]["name"],
+            "sign_lord": details["sign"]["lord"],
+            "star": details["star"]["name"],
+            "star_lord": details["star"]["lord"],
+            "sub_lord": details["sub_lord"],
+            "sub_sub_lord": details.get("sub_sub_lord", ""),
+            "pada": details["star"]["pada"]
+        })
+    
+    return rotated
+
+
 def calculate_ascendant(jd: float, latitude: float, longitude: float,
                         ayanamsa: float) -> Dict:
     """
