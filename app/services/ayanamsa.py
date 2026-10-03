@@ -1,10 +1,11 @@
 """
 KP Ayanamsa Calculation Module
 
-Supports three ayanamsa calculation methods:
+Supports four ayanamsa calculation methods:
 1. KP Old (KSK) - Original formula by K.S. Krishnamurti
 2. KP New (Balachandran) - Enhanced formula by Prof. K. Balachandran (2003)
-3. Manual - User-provided custom ayanamsa value
+3. KP Khullar - S.P. Khullar's linear formula (zero year 292 AD)
+4. Manual - User-provided custom ayanamsa value
 
 Formula: Ayanamsa = B + [T * P + (T² * A)] / 3600
 
@@ -29,6 +30,7 @@ class AyanamsaType(str, Enum):
     """Ayanamsa calculation type enumeration."""
     OLD = "old"      # KP Old (KSK) - Original
     NEW = "new"      # KP New (Balachandran) - Current standard
+    KHULLAR = "khullar"  # KP Khullar (S.P. Khullar) - zero year 292 AD
     MANUAL = "manual"  # User-provided value
 
 
@@ -52,6 +54,10 @@ BASE_OLD_AYANAMSA = BASE_OLD_DEG + BASE_OLD_MIN / 60.0 + BASE_OLD_SEC / 3600.0
 # Precession constants (same for both)
 PRECESSION_RATE = 50.2388475  # arc-seconds per year (Newcomb's)
 ANNUAL_ADJUSTMENT = 0.000111  # arc-seconds per year squared
+
+# KP Khullar: linear precession from zero year 292 AD (+ 261/365 year offset)
+KHULLAR_ZERO_YEAR = 292
+KHULLAR_OFFSET = 261 / 365.0
 
 
 def julian_day_to_year_fraction(jd: float) -> float:
@@ -133,7 +139,25 @@ def calculate_kp_old_ayanamsa(jd: float) -> float:
     return BASE_OLD_AYANAMSA + precession_deg
 
 
-def calculate_ayanamsa(jd: float, 
+def calculate_kp_khullar_ayanamsa(jd: float) -> float:
+    """
+    Calculate the KP Khullar Ayanamsa (S.P. Khullar) for a given Julian Day.
+
+    Formula: Ayanamsa = (P / 3600) * ((YEAR - 292) + 261/365 + day_fraction)
+    where P = 50.2388475"/year and the zero year is 292 AD.
+    Gives about 23°50'44" on Jan 1, 2000.
+
+    Args:
+        jd: Julian Day Number
+
+    Returns:
+        Ayanamsa value in degrees
+    """
+    year_fraction = julian_day_to_year_fraction(jd)
+    return (PRECESSION_RATE / 3600.0) * ((year_fraction - KHULLAR_ZERO_YEAR) + KHULLAR_OFFSET)
+
+
+def calculate_ayanamsa(jd: float,
                        ayanamsa_type: str = "new",
                        manual_value: Optional[float] = None) -> tuple[float, str]:
     """
@@ -156,6 +180,9 @@ def calculate_ayanamsa(jd: float,
     
     elif ayanamsa_type == AyanamsaType.OLD.value:
         return (calculate_kp_old_ayanamsa(jd), "KP Old (KSK)")
+
+    elif ayanamsa_type == AyanamsaType.KHULLAR.value:
+        return (calculate_kp_khullar_ayanamsa(jd), "KP Khullar")
     
     else:  # Default to new
         return (calculate_kp_new_ayanamsa(jd), "KP New (Balachandran)")
