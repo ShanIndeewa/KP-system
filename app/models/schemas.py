@@ -24,7 +24,7 @@ class CalculationRequest(BaseModel):
     Supports either direct coordinates or Sri Lanka location selection.
     """
     date: str = Field(..., description="Birth date in YYYY-MM-DD format")
-    time: str = Field(..., description="Birth time in HH:MM format (24-hour)")
+    time: str = Field(..., description="Birth time in HH:MM or HH:MM:SS format (24-hour)")
     latitude: Optional[float] = Field(None, description="Latitude in decimal degrees (positive for North)")
     longitude: Optional[float] = Field(None, description="Longitude in decimal degrees (positive for East)")
     timezone: Optional[float] = Field(None, description="Timezone offset from UTC. If omitted, it is detected automatically from the coordinates (DST/historical offsets included)")
@@ -57,11 +57,12 @@ class CalculationRequest(BaseModel):
             if len(parts) < 2:
                 raise ValueError()
             hour, minute = int(parts[0]), int(parts[1])
-            if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+            second = int(parts[2]) if len(parts) > 2 else 0
+            if len(parts) > 3 or not (0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59):
                 raise ValueError()
             return v
         except:
-            raise ValueError("Time must be in HH:MM format (24-hour)")
+            raise ValueError("Time must be in HH:MM or HH:MM:SS format (24-hour)")
 
 
 class SignInfo(BaseModel):
@@ -89,6 +90,7 @@ class PlanetPosition(BaseModel):
     star_lord: str
     sub_lord: str
     sub_sub_lord: Optional[str] = ""
+    sub_sub_sub_lord: Optional[str] = ""
     pada: int
     levels: Optional[dict] = Field(None, description="Sign/Star/Sub/Sub-Sub division spans (lord, start, end) for this point")
     retrograde: bool = False
@@ -106,6 +108,7 @@ class HouseCusp(BaseModel):
     star_lord: str
     sub_lord: str
     sub_sub_lord: Optional[str] = ""
+    sub_sub_sub_lord: Optional[str] = ""
     pada: int
     levels: Optional[dict] = Field(None, description="Sign/Star/Sub/Sub-Sub division spans (lord, start, end) for this point")
 
@@ -120,6 +123,7 @@ class AscendantInfo(BaseModel):
     star_lord: str
     sub_lord: str
     sub_sub_lord: Optional[str] = ""
+    sub_sub_sub_lord: Optional[str] = ""
 
 
 class AyanamsaInfo(BaseModel):
@@ -185,7 +189,7 @@ class HoraryRequest(BaseModel):
     """
     horary_number: int = Field(..., ge=1, le=249, description="KP Horary number (1-249)")
     date: str = Field(..., description="Date of query in YYYY-MM-DD format")
-    time: Optional[str] = Field(None, description="Time of judgment in HH:MM format (24-hour). If not provided, server current time is used.")
+    time: Optional[str] = Field(None, description="Time of judgment in HH:MM or HH:MM:SS format (24-hour). If not provided, server current time is used.")
     latitude: Optional[float] = Field(None, description="Latitude in decimal degrees")
     longitude: Optional[float] = Field(None, description="Longitude in decimal degrees")
     timezone: Optional[float] = Field(None, description="Timezone offset from UTC. If omitted, it is detected automatically from the coordinates")

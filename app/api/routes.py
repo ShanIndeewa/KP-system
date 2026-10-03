@@ -130,14 +130,15 @@ async def calculate_chart(request: CalculationRequest):
         time_parts = request.time.split(":")
         hour = int(time_parts[0])
         minute = int(time_parts[1])
+        second = int(time_parts[2]) if len(time_parts) > 2 else 0
         
         # Resolve location + time zone correction
         latitude, longitude, timezone, location_name, tz_name = await resolve_location(
-            request, datetime(year, month, day, hour, minute)
+            request, datetime(year, month, day, hour, minute, second)
         )
         
         # Calculate Julian Day
-        jd = date_to_julian_day(year, month, day, hour, minute, 0.0, timezone)
+        jd = date_to_julian_day(year, month, day, hour, minute, float(second), timezone)
         
         # Calculate Ayanamsa (supports old, new, or manual)
         ayanamsa, ayanamsa_type_label = calculate_ayanamsa(
@@ -182,7 +183,8 @@ async def calculate_chart(request: CalculationRequest):
                 star=ascendant["star"],
                 star_lord=ascendant["star_lord"],
                 sub_lord=ascendant["sub_lord"],
-                sub_sub_lord=ascendant.get("sub_sub_lord", "")
+                sub_sub_lord=ascendant.get("sub_sub_lord", ""),
+                sub_sub_sub_lord=ascendant.get("sub_sub_sub_lord", "")
             ),
             planets=[PlanetPosition(**p) for p in planets],
             houses=[HouseCusp(**h) for h in houses],
@@ -200,7 +202,7 @@ async def calculate_chart(request: CalculationRequest):
         if moon_longitude is not None:
             try:
                 birth_datetime = datetime(
-                    year, month, day, hour, minute, 0
+                    year, month, day, hour, minute, second
                 )
                 dasha_data = get_full_dasha_info(moon_longitude, birth_datetime)
                 
@@ -328,9 +330,10 @@ async def get_ayanamsa(
         time_parts = time.split(":")
         hour = int(time_parts[0])
         minute = int(time_parts[1])
+        second = int(time_parts[2]) if len(time_parts) > 2 else 0
         
         # Calculate
-        jd = date_to_julian_day(year, month, day, hour, minute, 0.0, timezone)
+        jd = date_to_julian_day(year, month, day, hour, minute, float(second), timezone)
         ayanamsa, type_label = calculate_ayanamsa(jd, ayanamsa_type, manual_ayanamsa)
         
         return {
@@ -388,11 +391,12 @@ async def calculate_horary_endpoint(request: HoraryRequest):
         
         # Resolve location + time zone correction
         if request.time:
-            _h, _m = [int(x) for x in request.time.split(":")[:2]]
+            _p = [int(x) for x in request.time.split(":")]
+            _h, _m, _s = _p[0], _p[1], (_p[2] if len(_p) > 2 else 0)
         else:
-            _h, _m = 12, 0
+            _h, _m, _s = 12, 0, 0
         latitude, longitude_geo, timezone, location_name, tz_name = await resolve_location(
-            request, datetime(year, month, day, _h, _m)
+            request, datetime(year, month, day, _h, _m, _s)
         )
         
         # Determine time of judgment
@@ -401,7 +405,7 @@ async def calculate_horary_endpoint(request: HoraryRequest):
             time_parts = request.time.split(":")
             hour = int(time_parts[0])
             minute = int(time_parts[1])
-            second = 0
+            second = int(time_parts[2]) if len(time_parts) > 2 else 0
         else:
             from datetime import timedelta
             # Get current UTC time, then offset by the location's timezone
@@ -411,7 +415,7 @@ async def calculate_horary_endpoint(request: HoraryRequest):
             minute = local_time.minute
             second = local_time.second
         
-        judgment_time_str = f"{hour:02d}:{minute:02d}"
+        judgment_time_str = f"{hour:02d}:{minute:02d}:{second:02d}"
         
         # Calculate Julian Day for the time of judgment
         jd = date_to_julian_day(year, month, day, hour, minute, second, timezone)
@@ -461,7 +465,8 @@ async def calculate_horary_endpoint(request: HoraryRequest):
             "star": horary_asc_details["star"]["name"],
             "star_lord": horary_asc_details["star"]["lord"],
             "sub_lord": horary_asc_details["sub_lord"],
-            "sub_sub_lord": horary_asc_details.get("sub_sub_lord", "")
+            "sub_sub_lord": horary_asc_details.get("sub_sub_lord", ""),
+            "sub_sub_sub_lord": horary_asc_details.get("sub_sub_sub_lord", "")
         }
         
         # Build response
@@ -500,7 +505,8 @@ async def calculate_horary_endpoint(request: HoraryRequest):
                 star=ascendant_data["star"],
                 star_lord=ascendant_data["star_lord"],
                 sub_lord=ascendant_data["sub_lord"],
-                sub_sub_lord=ascendant_data.get("sub_sub_lord", "")
+                sub_sub_lord=ascendant_data.get("sub_sub_lord", ""),
+                sub_sub_sub_lord=ascendant_data.get("sub_sub_sub_lord", "")
             ),
             planets=[PlanetPosition(**p) for p in planets],
             houses=[HouseCusp(**h) for h in houses],

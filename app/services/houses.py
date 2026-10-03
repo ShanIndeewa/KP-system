@@ -63,6 +63,7 @@ def calculate_house_cusps(jd: float, latitude: float, longitude: float,
             "star_lord": details["star"]["lord"],
             "sub_lord": details["sub_lord"],
             "sub_sub_lord": details.get("sub_sub_lord", ""),
+            "sub_sub_sub_lord": details.get("sub_sub_sub_lord", ""),
             "pada": details["star"]["pada"],
             "levels": get_kp_levels(sidereal_cusp)
         }
@@ -112,6 +113,7 @@ def rotate_house_cusps(houses: List[Dict], rotation_offset: float) -> List[Dict]
             "star_lord": details["star"]["lord"],
             "sub_lord": details["sub_lord"],
             "sub_sub_lord": details.get("sub_sub_lord", ""),
+            "sub_sub_sub_lord": details.get("sub_sub_sub_lord", ""),
             "pada": details["star"]["pada"],
             "levels": get_kp_levels(new_longitude)
         })
@@ -147,7 +149,8 @@ def calculate_ascendant(jd: float, latitude: float, longitude: float,
         "star": details["star"]["name"],
         "star_lord": details["star"]["lord"],
         "sub_lord": details["sub_lord"],
-        "sub_sub_lord": details.get("sub_sub_lord", "")
+        "sub_sub_lord": details.get("sub_sub_lord", ""),
+        "sub_sub_sub_lord": details.get("sub_sub_sub_lord", "")
     }
 
 
@@ -179,7 +182,8 @@ def calculate_midheaven(jd: float, latitude: float, longitude: float,
         "star": details["star"]["name"],
         "star_lord": details["star"]["lord"],
         "sub_lord": details["sub_lord"],
-        "sub_sub_lord": details.get("sub_sub_lord", "")
+        "sub_sub_lord": details.get("sub_sub_lord", ""),
+        "sub_sub_sub_lord": details.get("sub_sub_sub_lord", "")
     }
 
 

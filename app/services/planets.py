@@ -68,6 +68,7 @@ def calculate_planet_positions(jd: float, ayanamsa: float) -> List[Dict]:
             "star_lord": details["star"]["lord"],
             "sub_lord": details["sub_lord"],
             "sub_sub_lord": details.get("sub_sub_lord", ""),
+            "sub_sub_sub_lord": details.get("sub_sub_sub_lord", ""),
             "pada": details["star"]["pada"],
             "levels": get_kp_levels(sidereal_longitude),
             "retrograde": is_retrograde
@@ -92,6 +93,7 @@ def calculate_planet_positions(jd: float, ayanamsa: float) -> List[Dict]:
                 "star_lord": ketu_details["star"]["lord"],
                 "sub_lord": ketu_details["sub_lord"],
                 "sub_sub_lord": ketu_details.get("sub_sub_lord", ""),
+                "sub_sub_sub_lord": ketu_details.get("sub_sub_sub_lord", ""),
                 "pada": ketu_details["star"]["pada"],
                 "levels": get_kp_levels(ketu_sidereal),
                 "retrograde": True  # Nodes are always retrograde
@@ -147,5 +149,6 @@ def get_planet_position_simple(jd: float, planet_name: str, ayanamsa: float) -> 
         "star": details["star"]["name"],
         "star_lord": details["star"]["lord"],
         "sub_lord": details["sub_lord"],
-        "sub_sub_lord": details.get("sub_sub_lord", "")
+        "sub_sub_lord": details.get("sub_sub_lord", ""),
+        "sub_sub_sub_lord": details.get("sub_sub_sub_lord", "")
     }

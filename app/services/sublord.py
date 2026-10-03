@@ -286,6 +286,7 @@ def get_sign_star_sub(longitude: float, include_sub_sub: bool = True) -> Dict:
     if include_sub_sub:
         sub_sub = get_sub_sub_lord(longitude)
         result["sub_sub_lord"] = sub_sub["lord"]
+        result["sub_sub_sub_lord"] = get_kp_levels(longitude)["sub_sub_sub"]["lord"]
     
     return result
 
@@ -349,9 +350,14 @@ def get_kp_levels(longitude: float) -> Dict:
     ssl_lord, ssl_rel_start, ssl_rel_end = _find_division(
         sub_lord, sub_rel_end - sub_rel_start, position_in_star - sub_rel_start
     )
+    sssl_lord, sssl_rel_start, sssl_rel_end = _find_division(
+        ssl_lord, ssl_rel_end - ssl_rel_start, position_in_star - sub_rel_start - ssl_rel_start
+    )
     sub_start, sub_end = star_start + sub_rel_start, star_start + sub_rel_end
     ssl_start = sub_start + ssl_rel_start
     ssl_end = sub_start + ssl_rel_end
+    sssl_start = ssl_start + sssl_rel_start
+    sssl_end = ssl_start + sssl_rel_end
 
     return {
         "sign": _level(sign_start, sign_start + 30.0, name=sign["name"], lord=sign["lord"]),
@@ -359,6 +365,7 @@ def get_kp_levels(longitude: float) -> Dict:
                        name=nakshatra["name"], lord=nakshatra["lord"]),
         "sub": _level(sub_start, sub_end, lord=sub_lord),
         "sub_sub": _level(ssl_start, ssl_end, lord=ssl_lord),
+        "sub_sub_sub": _level(sssl_start, sssl_end, lord=sssl_lord),
     }
 
 
