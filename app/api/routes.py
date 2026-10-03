@@ -39,9 +39,51 @@ from app.services.planets import calculate_planet_positions
 from app.services.houses import calculate_house_cusps, calculate_ascendant, rotate_house_cusps
 from app.services.dasha import get_full_dasha_info
 from app.services.horary import get_horary_info, generate_horary_table
+from app.services.geocoding import geocode_place, get_utc_offset
 
 
 router = APIRouter()
+
+
+async def resolve_location(request, local_dt: datetime):
+    """
+    Resolve (latitude, longitude, timezone offset, location name, tz name).
+
+    Priority: Sri Lanka 'location' key > geocoded 'place' > raw lat/long.
+    If no explicit timezone is given, it is detected from the coordinates
+    using the IANA tz database at the given local date/time.
+    """
+    tz_name = None
+    if request.location:
+        try:
+            loc = get_location(request.location)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return loc["latitude"], loc["longitude"], loc["timezone"], loc["name"], "Asia/Colombo"
+
+    if request.place:
+        try:
+            geo = await geocode_place(request.place)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except RuntimeError as e:
+            raise HTTPException(status_code=502, detail=str(e))
+        latitude, longitude, name = geo["latitude"], geo["longitude"], geo["name"]
+    elif request.latitude is not None and request.longitude is not None:
+        latitude, longitude, name = request.latitude, request.longitude, None
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide 'location', 'place', or both 'latitude' and 'longitude'"
+        )
+
+    if request.timezone is not None:
+        return latitude, longitude, request.timezone, name, None
+    try:
+        timezone, tz_name = get_utc_offset(latitude, longitude, local_dt)
+    except ValueError:
+        timezone = 5.5
+    return latitude, longitude, timezone, name, tz_name
 
 
 @router.post("/calculate", response_model=CalculationResponse, tags=["🔮 Chart Calculations"])
@@ -79,29 +121,6 @@ async def calculate_chart(request: CalculationRequest):
     ```
     """
     try:
-        # Resolve location
-        if request.location:
-            # Use Sri Lanka location database
-            try:
-                loc_data = get_location(request.location)
-                latitude = loc_data["latitude"]
-                longitude = loc_data["longitude"]
-                timezone = loc_data["timezone"]
-                location_name = loc_data["name"]
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-        elif request.latitude is not None and request.longitude is not None:
-            # Use provided coordinates
-            latitude = request.latitude
-            longitude = request.longitude
-            timezone = request.timezone if request.timezone is not None else 5.5
-            location_name = None
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Either 'location' or both 'latitude' and 'longitude' must be provided"
-            )
-        
         # Parse date and time
         date_parts = request.date.split("-")
         year = int(date_parts[0])
@@ -111,6 +130,11 @@ async def calculate_chart(request: CalculationRequest):
         time_parts = request.time.split(":")
         hour = int(time_parts[0])
         minute = int(time_parts[1])
+        
+        # Resolve location + time zone correction
+        latitude, longitude, timezone, location_name, tz_name = await resolve_location(
+            request, datetime(year, month, day, hour, minute)
+        )
         
         # Calculate Julian Day
         jd = date_to_julian_day(year, month, day, hour, minute, 0.0, timezone)
@@ -141,7 +165,8 @@ async def calculate_chart(request: CalculationRequest):
                 name=location_name,
                 latitude=latitude,
                 longitude=longitude,
-                timezone=timezone
+                timezone=timezone,
+                timezone_name=tz_name
             ),
             julian_day=round(jd, 6),
             ayanamsa=AyanamsaInfo(
@@ -217,6 +242,24 @@ async def get_locations():
         count=len(locations),
         locations=[LocationInfo(**loc) for loc in locations]
     )
+
+
+@router.get("/geocode", tags=["📍 Locations"])
+async def geocode(q: str, date: Optional[str] = None, time: str = "12:00"):
+    """
+    Fetch coordinates for any place name and detect its time zone.
+    If 'date' (YYYY-MM-DD) is given, the UTC offset valid at that date/time is returned.
+    """
+    try:
+        geo = await geocode_place(q)
+        when = (datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
+                if date else datetime.now())
+        offset, tz_name = get_utc_offset(geo["latitude"], geo["longitude"], when)
+        return {"success": True, **geo, "timezone": offset, "timezone_name": tz_name}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get("/locations/{location_key}", tags=["📍 Locations"])
@@ -337,32 +380,20 @@ async def calculate_horary_endpoint(request: HoraryRequest):
     ```
     """
     try:
-        # Resolve location
-        if request.location:
-            try:
-                loc_data = get_location(request.location)
-                latitude = loc_data["latitude"]
-                longitude_geo = loc_data["longitude"]
-                timezone = loc_data["timezone"]
-                location_name = loc_data["name"]
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-        elif request.latitude is not None and request.longitude is not None:
-            latitude = request.latitude
-            longitude_geo = request.longitude
-            timezone = request.timezone if request.timezone is not None else 5.5
-            location_name = None
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Either 'location' or both 'latitude' and 'longitude' must be provided"
-            )
-        
         # Parse date
         date_parts = request.date.split("-")
         year = int(date_parts[0])
         month = int(date_parts[1])
         day = int(date_parts[2])
+        
+        # Resolve location + time zone correction
+        if request.time:
+            _h, _m = [int(x) for x in request.time.split(":")[:2]]
+        else:
+            _h, _m = 12, 0
+        latitude, longitude_geo, timezone, location_name, tz_name = await resolve_location(
+            request, datetime(year, month, day, _h, _m)
+        )
         
         # Determine time of judgment
         # If time is not provided, use server's current time in the location's timezone
@@ -452,7 +483,8 @@ async def calculate_horary_endpoint(request: HoraryRequest):
                 name=location_name,
                 latitude=latitude,
                 longitude=longitude_geo,
-                timezone=timezone
+                timezone=timezone,
+                timezone_name=tz_name
             ),
             julian_day=round(jd, 6),
             ayanamsa=AyanamsaInfo(

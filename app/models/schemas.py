@@ -27,8 +27,9 @@ class CalculationRequest(BaseModel):
     time: str = Field(..., description="Birth time in HH:MM format (24-hour)")
     latitude: Optional[float] = Field(None, description="Latitude in decimal degrees (positive for North)")
     longitude: Optional[float] = Field(None, description="Longitude in decimal degrees (positive for East)")
-    timezone: Optional[float] = Field(5.5, description="Timezone offset from UTC (default: 5.5 for Sri Lanka)")
+    timezone: Optional[float] = Field(None, description="Timezone offset from UTC. If omitted, it is detected automatically from the coordinates (DST/historical offsets included)")
     location: Optional[str] = Field(None, description="Sri Lanka location key (e.g., 'colombo', 'galle')")
+    place: Optional[str] = Field(None, description="Any place name (e.g., 'Kandy, Sri Lanka'); coordinates are fetched from a geocoding API")
     ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), or 'manual'")
     manual_ayanamsa: Optional[float] = Field(None, description="Custom ayanamsa value in degrees (required when ayanamsa_type='manual')")
     
@@ -134,6 +135,7 @@ class LocationUsed(BaseModel):
     latitude: float
     longitude: float
     timezone: float
+    timezone_name: Optional[str] = None
 
 
 class CalculationResponse(BaseModel):
@@ -186,8 +188,9 @@ class HoraryRequest(BaseModel):
     time: Optional[str] = Field(None, description="Time of judgment in HH:MM format (24-hour). If not provided, server current time is used.")
     latitude: Optional[float] = Field(None, description="Latitude in decimal degrees")
     longitude: Optional[float] = Field(None, description="Longitude in decimal degrees")
-    timezone: Optional[float] = Field(5.5, description="Timezone offset from UTC")
+    timezone: Optional[float] = Field(None, description="Timezone offset from UTC. If omitted, it is detected automatically from the coordinates")
     location: Optional[str] = Field(None, description="Sri Lanka location key")
+    place: Optional[str] = Field(None, description="Any place name; coordinates are fetched from a geocoding API")
     ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), or 'manual'")
     manual_ayanamsa: Optional[float] = Field(None, description="Custom ayanamsa value in degrees (required when ayanamsa_type='manual')")
     
