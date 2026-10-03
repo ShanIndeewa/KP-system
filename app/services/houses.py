@@ -17,7 +17,7 @@ from app.services.astronomy import (
     calculate_mc,
     normalize_angle
 )
-from app.services.sublord import get_sign_star_sub
+from app.services.sublord import get_sign_star_sub, get_kp_levels
 
 
 def calculate_house_cusps(jd: float, latitude: float, longitude: float, 
@@ -63,7 +63,8 @@ def calculate_house_cusps(jd: float, latitude: float, longitude: float,
             "star_lord": details["star"]["lord"],
             "sub_lord": details["sub_lord"],
             "sub_sub_lord": details.get("sub_sub_lord", ""),
-            "pada": details["star"]["pada"]
+            "pada": details["star"]["pada"],
+            "levels": get_kp_levels(sidereal_cusp)
         }
         
         house_cusps.append(cusp_data)
@@ -111,7 +112,8 @@ def rotate_house_cusps(houses: List[Dict], rotation_offset: float) -> List[Dict]
             "star_lord": details["star"]["lord"],
             "sub_lord": details["sub_lord"],
             "sub_sub_lord": details.get("sub_sub_lord", ""),
-            "pada": details["star"]["pada"]
+            "pada": details["star"]["pada"],
+            "levels": get_kp_levels(new_longitude)
         })
     
     return rotated

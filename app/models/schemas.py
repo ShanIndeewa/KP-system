@@ -89,6 +89,7 @@ class PlanetPosition(BaseModel):
     sub_lord: str
     sub_sub_lord: Optional[str] = ""
     pada: int
+    levels: Optional[dict] = Field(None, description="Sign/Star/Sub/Sub-Sub division spans (lord, start, end) for this point")
     retrograde: bool = False
 
 
@@ -105,6 +106,7 @@ class HouseCusp(BaseModel):
     sub_lord: str
     sub_sub_lord: Optional[str] = ""
     pada: int
+    levels: Optional[dict] = Field(None, description="Sign/Star/Sub/Sub-Sub division spans (lord, start, end) for this point")
 
 
 class AscendantInfo(BaseModel):

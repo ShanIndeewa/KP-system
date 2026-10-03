@@ -290,6 +290,78 @@ def get_sign_star_sub(longitude: float, include_sub_sub: bool = True) -> Dict:
     return result
 
 
+def get_kp_levels(longitude: float) -> Dict:
+    """
+    Get the full Sign > Star > Sub > Sub-Sub division for a longitude.
+
+    Each level reports its lord and the absolute start/end longitude of the
+    division the point falls in, so cusps and planets can be placed within
+    every level of the KP hierarchy.
+
+    Args:
+        longitude: Sidereal longitude (0-360)
+
+    Returns:
+        Dict with 'sign', 'star', 'sub', 'sub_sub' levels, each containing
+        name/lord (where relevant), start, end (decimal degrees) and dms values
+    """
+    longitude = normalize_longitude(longitude)
+
+    sign_index = int(longitude / 30.0)
+    sign = ZODIAC_SIGNS[sign_index]
+    sign_start = sign_index * 30.0
+
+    star_index = int(longitude / NAKSHATRA_SPAN)
+    if star_index >= 27:
+        star_index = 0
+    nakshatra = NAKSHATRAS[star_index]
+    star_start = star_index * NAKSHATRA_SPAN
+
+    def _level(start: float, end: float, **extra) -> Dict:
+        return {
+            **extra,
+            "start": round(start, 6),
+            "end": round(end, 6),
+            "start_dms": format_longitude_dms(normalize_longitude(start)),
+            "end_dms": format_longitude_dms(normalize_longitude(end)),
+        }
+
+    def _find_division(lords_start: str, span: float, position: float):
+        """
+        Walk the Vimshottari-proportional divisions of a span, using a position
+        relative to the span start (same arithmetic as get_sub_lord /
+        get_sub_sub_lord so boundaries resolve identically).
+        Returns (lord, relative_start, relative_end).
+        """
+        idx = VIMSHOTTARI_ORDER.index(lords_start)
+        acc = 0.0
+        for i in range(9):
+            planet = VIMSHOTTARI_ORDER[(idx + i) % 9]
+            part = (VIMSHOTTARI_PERIODS[planet] / TOTAL_DASHA_YEARS) * span
+            if position < acc + part or i == 8:
+                return planet, acc, acc + part
+            acc += part
+
+    position_in_star = longitude - star_start
+    sub_lord, sub_rel_start, sub_rel_end = _find_division(
+        nakshatra["lord"], NAKSHATRA_SPAN, position_in_star
+    )
+    ssl_lord, ssl_rel_start, ssl_rel_end = _find_division(
+        sub_lord, sub_rel_end - sub_rel_start, position_in_star - sub_rel_start
+    )
+    sub_start, sub_end = star_start + sub_rel_start, star_start + sub_rel_end
+    ssl_start = sub_start + ssl_rel_start
+    ssl_end = sub_start + ssl_rel_end
+
+    return {
+        "sign": _level(sign_start, sign_start + 30.0, name=sign["name"], lord=sign["lord"]),
+        "star": _level(star_start, star_start + NAKSHATRA_SPAN,
+                       name=nakshatra["name"], lord=nakshatra["lord"]),
+        "sub": _level(sub_start, sub_end, lord=sub_lord),
+        "sub_sub": _level(ssl_start, ssl_end, lord=ssl_lord),
+    }
+
+
 def format_longitude_dms(longitude: float) -> str:
     """
     Format longitude as sign-degrees-minutes-seconds.
@@ -310,11 +382,14 @@ def format_longitude_dms(longitude: float) -> str:
     pos_in_sign = longitude - (sign_index * 30.0)
     
     # Convert to DMS
-    degrees = int(pos_in_sign)
-    min_decimal = (pos_in_sign - degrees) * 60
-    minutes = int(min_decimal)
-    seconds = (min_decimal - minutes) * 60
-    
+    # Work in hundredths of an arc-second so rounding carries into minutes/degrees
+    total_cs = round(pos_in_sign * 3600 * 100)
+    if total_cs >= 30 * 3600 * 100:
+        total_cs = 30 * 3600 * 100 - 1
+    degrees, rem = divmod(total_cs, 3600 * 100)
+    minutes, rem = divmod(rem, 60 * 100)
+    seconds = rem / 100.0
+
     return f"{degrees:02d}°{minutes:02d}'{seconds:05.2f}\" {sign_name}"
 
 

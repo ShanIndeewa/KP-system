@@ -18,7 +18,7 @@ from app.services.astronomy import (
     calculate_rahu_position,
     normalize_angle
 )
-from app.services.sublord import get_sign_star_sub
+from app.services.sublord import get_sign_star_sub, get_kp_levels
 
 
 def calculate_planet_positions(jd: float, ayanamsa: float) -> List[Dict]:
@@ -69,6 +69,7 @@ def calculate_planet_positions(jd: float, ayanamsa: float) -> List[Dict]:
             "sub_lord": details["sub_lord"],
             "sub_sub_lord": details.get("sub_sub_lord", ""),
             "pada": details["star"]["pada"],
+            "levels": get_kp_levels(sidereal_longitude),
             "retrograde": is_retrograde
         }
         
@@ -92,6 +93,7 @@ def calculate_planet_positions(jd: float, ayanamsa: float) -> List[Dict]:
                 "sub_lord": ketu_details["sub_lord"],
                 "sub_sub_lord": ketu_details.get("sub_sub_lord", ""),
                 "pada": ketu_details["star"]["pada"],
+                "levels": get_kp_levels(ketu_sidereal),
                 "retrograde": True  # Nodes are always retrograde
             }
             
