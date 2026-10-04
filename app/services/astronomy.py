@@ -322,65 +322,85 @@ def calculate_mc(jd: float, longitude: float) -> float:
     return mc
 
 
+def _placidus_intermediate(ramc: float, eps: float, lat: float,
+                           fraction: float, above_horizon: bool) -> float:
+    """
+    Iteratively solve one Placidus intermediate cusp (tropical longitude).
+
+    The cusp is the ecliptic point whose right ascension lies `fraction` of its
+    OWN semi-arc away from the meridian (MC for houses 11/12, IC for 2/3), so
+    the semi-arc depends on the cusp's declination and is found by iteration.
+
+    Args:
+        ramc: Right ascension of the MC (= local sidereal time), degrees
+        eps: Obliquity of the ecliptic, degrees
+        lat: Geographic latitude, degrees
+        fraction: 1/3 or 2/3 of the semi-arc
+        above_horizon: True for houses 11/12 (diurnal arc), False for 2/3 (nocturnal arc)
+    """
+    eps_rad = math.radians(eps)
+    lat_rad = math.radians(lat)
+    ra = ramc + 30.0 if above_horizon else ramc + 150.0  # first guess
+    lon = 0.0
+
+    for _ in range(50):
+        ra_rad = math.radians(ra)
+        lon = math.atan2(math.sin(ra_rad), math.cos(ra_rad) * math.cos(eps_rad))
+        decl = math.asin(math.sin(eps_rad) * math.sin(lon))
+        x = -math.tan(lat_rad) * math.tan(decl)
+        if abs(x) >= 1.0:
+            raise ValueError(
+                "Placidus houses are undefined at this latitude (circumpolar ecliptic point)"
+            )
+        dsa = math.degrees(math.acos(x))            # diurnal semi-arc
+        if above_horizon:
+            new_ra = ramc + fraction * dsa          # MC -> ASC side
+        else:
+            new_ra = ramc + 180.0 - fraction * (180.0 - dsa)  # IC side (nocturnal arc)
+        if abs(new_ra - ra) < 1e-10:
+            ra = new_ra
+            break
+        ra = new_ra
+
+    ra_rad = math.radians(ra)
+    lon = math.atan2(math.sin(ra_rad), math.cos(ra_rad) * math.cos(eps_rad))
+    return normalize_angle(math.degrees(lon))
+
+
 def calculate_placidus_cusps(jd: float, latitude: float, longitude: float) -> list:
     """
-    Calculate house cusps using Placidus system.
-    
+    Calculate house cusps using the Placidus (semi-arc) system.
+
+    Cusps 1 (ASC) and 10 (MC) are the angles. Cusps 11, 12, 2 and 3 are solved
+    by trisecting the diurnal / nocturnal semi-arcs in right ascension; cusps
+    4-9 are the opposites of 10, 11, 12, 1, 2, 3.
+
     Returns list of 12 house cusps in tropical longitude.
     """
     asc = calculate_ascendant(jd, latitude, longitude)
     mc = calculate_mc(jd, longitude)
-    
+    ramc = calculate_sidereal_time(jd, longitude)
     eps = calculate_obliquity(jd)
-    lat_rad = math.radians(latitude)
-    
-    # House cusps array (0-indexed for houses 1-12)
-    cusps = [0.0] * 12
-    cusps[0] = asc   # House 1 (Ascendant)
-    cusps[9] = mc    # House 10 (MC)
-    
-    # Calculate intermediate cusps using semi-arc method
-    # For Placidus, we calculate by trisection of semi-arcs
-    
-    # IC (House 4) is opposite MC
-    ic = normalize_angle(mc + 180)
-    cusps[3] = ic
-    
-    # Descendant (House 7) is opposite Ascendant
-    desc = normalize_angle(asc + 180)
-    cusps[6] = desc
-    
-    # Calculate houses 11, 12 (between MC and ASC)
-    arc_mc_to_asc = normalize_angle(asc - mc)
-    if arc_mc_to_asc < 0:
-        arc_mc_to_asc += 360
-    
-    cusps[10] = normalize_angle(mc + arc_mc_to_asc / 3)       # House 11
-    cusps[11] = normalize_angle(mc + 2 * arc_mc_to_asc / 3)   # House 12
-    
-    # Calculate houses 2, 3 (between ASC and IC)
-    arc_asc_to_ic = normalize_angle(ic - asc)
-    if arc_asc_to_ic < 0:
-        arc_asc_to_ic += 360
-    
-    cusps[1] = normalize_angle(asc + arc_asc_to_ic / 3)       # House 2
-    cusps[2] = normalize_angle(asc + 2 * arc_asc_to_ic / 3)   # House 3
-    
-    # Houses 5, 6 (between IC and DESC)
-    arc_ic_to_desc = normalize_angle(desc - ic)
-    if arc_ic_to_desc < 0:
-        arc_ic_to_desc += 360
-    
-    cusps[4] = normalize_angle(ic + arc_ic_to_desc / 3)       # House 5
-    cusps[5] = normalize_angle(ic + 2 * arc_ic_to_desc / 3)   # House 6
-    
-    # Houses 8, 9 (between DESC and MC)
-    arc_desc_to_mc = normalize_angle(mc + 360 - desc) if mc < desc else normalize_angle(mc - desc)
-    
-    cusps[7] = normalize_angle(desc + arc_desc_to_mc / 3)     # House 8
-    cusps[8] = normalize_angle(desc + 2 * arc_desc_to_mc / 3) # House 9
-    
-    return cusps
+
+    c11 = _placidus_intermediate(ramc, eps, latitude, 1.0 / 3.0, True)
+    c12 = _placidus_intermediate(ramc, eps, latitude, 2.0 / 3.0, True)
+    c2 = _placidus_intermediate(ramc, eps, latitude, 2.0 / 3.0, False)
+    c3 = _placidus_intermediate(ramc, eps, latitude, 1.0 / 3.0, False)
+
+    return [
+        asc,                          # 1
+        c2,                           # 2
+        c3,                           # 3
+        normalize_angle(mc + 180),    # 4 (IC)
+        normalize_angle(c11 + 180),   # 5
+        normalize_angle(c12 + 180),   # 6
+        normalize_angle(asc + 180),   # 7 (DSC)
+        normalize_angle(c2 + 180),    # 8
+        normalize_angle(c3 + 180),    # 9
+        mc,                           # 10
+        c11,                          # 11
+        c12,                          # 12
+    ]
 
 
 def format_degrees_dms(degrees: float) -> str:
