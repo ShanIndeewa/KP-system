@@ -316,7 +316,7 @@ async def get_ayanamsa(
         date: Date in YYYY-MM-DD format
         time: Time in HH:MM format (default: 12:00)
         timezone: Timezone offset (default: 5.5)
-        ayanamsa_type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), or 'manual'
+        ayanamsa_type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), 'straight' (KP Straight), or 'manual'
         manual_ayanamsa: Custom value when type='manual'
     """
     try:

@@ -30,7 +30,7 @@ class CalculationRequest(BaseModel):
     timezone: Optional[float] = Field(None, description="Timezone offset from UTC. If omitted, it is detected automatically from the coordinates (DST/historical offsets included)")
     location: Optional[str] = Field(None, description="Sri Lanka location key (e.g., 'colombo', 'galle')")
     place: Optional[str] = Field(None, description="Any place name (e.g., 'Kandy, Sri Lanka'); coordinates are fetched from a geocoding API")
-    ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), or 'manual'")
+    ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), 'straight' (KP Straight), or 'manual'")
     manual_ayanamsa: Optional[float] = Field(None, description="Custom ayanamsa value in degrees (required when ayanamsa_type='manual')")
     
     @field_validator('date')
@@ -195,7 +195,7 @@ class HoraryRequest(BaseModel):
     timezone: Optional[float] = Field(None, description="Timezone offset from UTC. If omitted, it is detected automatically from the coordinates")
     location: Optional[str] = Field(None, description="Sri Lanka location key")
     place: Optional[str] = Field(None, description="Any place name; coordinates are fetched from a geocoding API")
-    ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), or 'manual'")
+    ayanamsa_type: Optional[str] = Field("new", description="Ayanamsa type: 'old' (KSK), 'new' (Balachandran), 'khullar' (S.P. Khullar), 'straight' (KP Straight), or 'manual'")
     manual_ayanamsa: Optional[float] = Field(None, description="Custom ayanamsa value in degrees (required when ayanamsa_type='manual')")
     
     @field_validator('date')

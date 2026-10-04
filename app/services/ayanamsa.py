@@ -31,6 +31,7 @@ class AyanamsaType(str, Enum):
     OLD = "old"      # KP Old (KSK) - Original
     NEW = "new"      # KP New (Balachandran) - Current standard
     KHULLAR = "khullar"  # KP Khullar (S.P. Khullar) - zero year 292 AD
+    STRAIGHT = "straight"  # KP Straight - TDB based, epoch J1900.0
     MANUAL = "manual"  # User-provided value
 
 
@@ -58,6 +59,26 @@ ANNUAL_ADJUSTMENT = 0.000111  # arc-seconds per year squared
 # KP Khullar: linear precession from zero year 292 AD (+ 261/365 year offset)
 KHULLAR_ZERO_YEAR = 292
 KHULLAR_OFFSET = 261 / 365.0
+
+
+# KP Straight: base at J1900.0 plus quadratic precession (arc-seconds)
+J1900_JD = 2415020.0
+# Original base 22.4512382555 reduced by 3.7403" (0.00103896 deg) so the Raj chart
+# (1972-11-29 05:03:50 IST) gives 23°28'03", matching the reference software.
+STRAIGHT_BASE_DEG = 22.4501992955
+STRAIGHT_RATE = 50.22512820   # arc-seconds per Julian year
+STRAIGHT_ACCEL = 0.00006660   # arc-seconds per Julian year squared
+
+_timescale = None
+
+
+def julian_day_to_tdb(jd_ut: float) -> float:
+    """Convert a UT Julian Day to TDB Julian Day (Skyfield's built-in Delta T)."""
+    global _timescale
+    if _timescale is None:
+        from skyfield.api import load
+        _timescale = load.timescale()
+    return float(_timescale.ut1_jd(jd_ut).tdb)
 
 
 def julian_day_to_year_fraction(jd: float) -> float:
@@ -157,6 +178,25 @@ def calculate_kp_khullar_ayanamsa(jd: float) -> float:
     return (PRECESSION_RATE / 3600.0) * ((year_fraction - KHULLAR_ZERO_YEAR) + KHULLAR_OFFSET)
 
 
+def calculate_kp_straight_ayanamsa(jd: float) -> float:
+    """
+    Calculate the KP Straight Ayanamsa for a given (UT) Julian Day.
+
+    dt   = (JD_TDB - J1900) / 365.25          # Julian years since J1900.0
+    prec = 50.22512820 * dt + 0.00006660 * dt^2   # arc-seconds
+    ayanamsa = STRAIGHT_BASE_DEG + prec / 3600    # base 22.4501992955 (calibrated), 8 decimals
+
+    Args:
+        jd: Julian Day Number (UT, as produced by date_to_julian_day)
+
+    Returns:
+        Ayanamsa value in degrees
+    """
+    dt = (julian_day_to_tdb(jd) - J1900_JD) / 365.25
+    prec = STRAIGHT_RATE * dt + STRAIGHT_ACCEL * dt * dt
+    return round(STRAIGHT_BASE_DEG + prec / 3600.0, 8)
+
+
 def calculate_ayanamsa(jd: float,
                        ayanamsa_type: str = "new",
                        manual_value: Optional[float] = None) -> tuple[float, str]:
@@ -165,7 +205,7 @@ def calculate_ayanamsa(jd: float,
     
     Args:
         jd: Julian Day Number
-        ayanamsa_type: Type of ayanamsa - 'old', 'new', or 'manual'
+        ayanamsa_type: Type of ayanamsa - 'old', 'new', 'khullar', 'straight' or 'manual'
         manual_value: Custom ayanamsa value (required when type='manual')
         
     Returns:
@@ -183,6 +223,9 @@ def calculate_ayanamsa(jd: float,
 
     elif ayanamsa_type == AyanamsaType.KHULLAR.value:
         return (calculate_kp_khullar_ayanamsa(jd), "KP Khullar")
+
+    elif ayanamsa_type == AyanamsaType.STRAIGHT.value:
+        return (calculate_kp_straight_ayanamsa(jd), "KP Straight")
     
     else:  # Default to new
         return (calculate_kp_new_ayanamsa(jd), "KP New (Balachandran)")
